@@ -1,0 +1,22 @@
+name: Train Logger Test
+
+on:
+  workflow_dispatch:   # 手動実行できるようにする
+
+jobs:
+  run-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests pandas
+
+      - name: Run test script
+        run: python train_logger.py
