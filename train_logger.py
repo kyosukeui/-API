@@ -1,114 +1,46 @@
-#本番用train_log.csv作成保存コード(5-24)---------------------------------------------------------------------------------------------------------------------------------
-
-import requests, time, csv
-from datetime import datetime
-
-# API設定
-url = "https://buscatch.jp/rt3/unko_map_simple.ajax.php"
-data = {"id": "chitetsu_train", "command": "get_unko_list", "rosen_group_id": "2235"}
-headers = {"User-Agent": "Mozilla/5.0", "X-Requested-With": "XMLHttpRequest"}
-
-# 車両ID→編成名の対照表（例）
-id_map = {
-    "1001": "デ7011編成",
-    "1002": "デ7012編成",
-    "2001": "デ7021編成",
-    # 必要に応じて追加
-}
-
-while True:
-    now = datetime.now()
-    hour = now.hour
-
-    # 5時～24時の間だけ処理
-    if 5 <= hour < 24:
-        date_str = now.strftime("%Y-%m-%d")  # 日付ごとにファイル分割
-        csv_file = f"train_log_{date_str}.csv"
-
-        # ヘッダー行を初回のみ書き込み
-        try:
-            open(csv_file, "r")
-        except FileNotFoundError:
-            with open(csv_file, "w", newline="", encoding="utf-8") as f:
-                writer = csv.writer(f)
-                writer.writerow(["timestamp", "vehicle_id", "formation_name", "headsign", "station"])
-
-        # データ取得
-        response = requests.post(url, headers=headers, data=data, timeout=10)
-        trains = response.json()
-
-        with open(csv_file, "a", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            for train in trains:
-                vid = train.get("vehicle_id")
-                formation = id_map.get(str(vid), f"ID:{vid}")  # 対照表にあれば編成名、なければID
-                writer.writerow([
-                    now.strftime("%Y-%m-%d %H:%M:%S"),
-                    vid,
-                    formation,
-                    train.get("headsign"),
-                    train.get("teiryujo_name")
-                ])
-
-        print(f"[{now}] データを保存しました ({len(trains)}件)")
-    else:
-        print(f"[{now}] 時間外のためスキップ")
-
-    # 20分間隔
-    time.sleep(20 * 60)
+#本番用train_log.csv作成保存コード(外部コードで20分ごとに呼びだし)---------------------------------------------------------------------------------------------------------------------------------
 
 
-#試験用(30s×3→結果出力)----------------------------------------------------------------------------------------------------------------------------------------
-
-import requests, time, csv
+# train_logger.py (Actions用に簡略化)
+import requests, csv
 from datetime import datetime
 
 url = "https://buscatch.jp/rt3/unko_map_simple.ajax.php"
 data = {"id": "chitetsu_train", "command": "get_unko_list", "rosen_group_id": "2235"}
 headers = {"User-Agent": "Mozilla/5.0", "X-Requested-With": "XMLHttpRequest"}
 
-id_map = {
-    "1001": "デ7011編成",
-    "1002": "デ7012編成",
-    "2001": "デ7021編成",
-}
+id_map = {"1001": "デ7011編成", "1002": "デ7012編成", "2001": "デ7021編成"}
 
-date_str = datetime.now().strftime("%Y-%m-%d")
+now = datetime.now()
+date_str = now.strftime("%Y-%m-%d")
 csv_file = f"train_log_{date_str}.csv"
 
-# ヘッダ行を最初に書く
-with open(csv_file, "w", newline="", encoding="utf-8") as f:
-    writer = csv.writer(f)
-    writer.writerow(["timestamp", "vehicle_id", "formation_name", "headsign", "station"])
-
-# 30秒ごと3回保存して終了
-for i in range(3):
-    now = datetime.now()
-    response = requests.post(url, headers=headers, data=data, timeout=10)
-    trains = response.json()
-
-    with open(csv_file, "a", newline="", encoding="utf-8") as f:
+# ヘッダー行を初回のみ書き込み
+try:
+    open(csv_file, "r")
+except FileNotFoundError:
+    with open(csv_file, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
-        for train in trains:
-            vid = train.get("vehicle_id")
-            formation = id_map.get(str(vid), f"ID:{vid}")
-            writer.writerow([
-                now.strftime("%Y-%m-%d %H:%M:%S"),
-                vid,
-                formation,
-                train.get("headsign"),
-                train.get("teiryujo_name")
-            ])
+        writer.writerow(["timestamp", "vehicle_id", "formation_name", "headsign", "station"])
 
-    print(f"[{now}] データを保存しました ({len(trains)}件)")
-    time.sleep(30)  # 30秒間隔
+# データ取得
+response = requests.post(url, headers=headers, data=data, timeout=10)
+trains = response.json()
 
-# 結果出力（最後にCSVの内容を表示）
-print("=== 保存結果 ===")
-with open(csv_file, "r", encoding="utf-8") as f:
-    for line in f:
-        print(line.strip())
-print("================")
+with open(csv_file, "a", newline="", encoding="utf-8") as f:
+    writer = csv.writer(f)
+    for train in trains:
+        vid = train.get("vehicle_id")
+        formation = id_map.get(str(vid), f"ID:{vid}")
+        writer.writerow([
+            now.strftime("%Y-%m-%d %H:%M:%S"),
+            vid,
+            formation,
+            train.get("headsign"),
+            train.get("teiryujo_name")
+        ])
+
+print(f"[{now}] データを保存しました ({len(trains)}件
 
 
 
