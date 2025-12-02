@@ -5,12 +5,15 @@ url = "https://buscatch.jp/rt3/unko_map_simple.ajax.php"
 data = {"id": "chitetsu_train", "command": "get_unko_list", "rosen_group_id": "2235"}
 headers = {"User-Agent": "Mozilla/5.0", "X-Requested-With": "XMLHttpRequest"}
 
-# 車両ID → 編成名の対応表（未知IDは "ID:xxxx" として出力）
+# 車両ID → 編成名の対応表
 id_map = {
     "1001": "デ7011編成",
     "1002": "デ7012編成",
     "2001": "デ7021編成"
 }
+
+# 編成順を定義（未知IDは最後）
+formation_order = ["デ7011編成", "デ7012編成", "デ7021編成"]
 
 date_str = datetime.now().strftime("%Y-%m-%d")
 csv_file = f"train_log_{date_str}.csv"
@@ -32,8 +35,12 @@ for i in range(3):
         time.sleep(30)
         continue
 
-    # vehicle_id を数値に変換して昇順ソート
-    sorted_trains = sorted(trains, key=lambda t: int(t.get("vehicle_id", 0)))
+    # formation_name順にソート
+    sorted_trains = sorted(
+        trains,
+        key=lambda t: formation_order.index(id_map.get(str(t.get("vehicle_id")), f"ID:{t.get('vehicle_id')}"))
+        if id_map.get(str(t.get("vehicle_id"))) in formation_order else len(formation_order)
+    )
 
     with open(csv_file, "a", newline="", encoding="utf-8-sig") as f:
         writer = csv.writer(f)
