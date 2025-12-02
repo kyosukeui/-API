@@ -1,5 +1,5 @@
 import requests, time, csv
-from datetime import datetime
+from datetime import datetime, timedelta
 
 url = "https://buscatch.jp/rt3/unko_map_simple.ajax.php"
 data = {"id": "chitetsu_train", "command": "get_unko_list", "rosen_group_id": "2235"}
@@ -16,20 +16,39 @@ id_map = {
 formation_order = ["デ7011編成", "デ7012編成", "デ7021編成"]
 
 date_str = datetime.now().strftime("%Y-%m-%d")
-csv_file = f"train_log_test_{date_str}.csv"
+csv_file = f"train_log_{date_str}.csv"
 
 # ヘッダ行（utf-8-sigで保存 → Excel対応）
 with open(csv_file, "w", newline="", encoding="utf-8-sig") as f:
     writer = csv.writer(f)
     writer.writerow(["timestamp", "vehicle_id", "formation_name", "headsign", "station"])
 
-# 2〜3回だけ実行して終了
-interval_minutes = 20  # 本番用（20分ごと）
-start_hour, end_hour = 5, 24  # 5:00〜24:00まで
+interval_minutes = 20  # 20分ごと
 
-for run in range(max_runs):
+# 開始・終了時刻を決定
+now = datetime.now()
+today = now.date()
+tomorrow = today + timedelta(days=1)
+
+if 0 <= now.hour < 5:
+    # 午前0時〜午前5時に起動した場合 → 当日5:00〜24:00
+    start = datetime.combine(today, datetime.strptime("05:00", "%H:%M").time())
+    end   = datetime.combine(today, datetime.strptime("24:00", "%H:%M").time())
+else:
+    # それ以外 → 翌日5:00〜24:00
+    start = datetime.combine(tomorrow, datetime.strptime("05:00", "%H:%M").time())
+    end   = datetime.combine(tomorrow, datetime.strptime("24:00", "%H:%M").time())
+
+# 開始時刻まで待機
+if now < start:
+    wait_seconds = (start - now).total_seconds()
+    print(f"Waiting until {start} to start collection...")
+    time.sleep(wait_seconds)
+
+# 20分ごとに収集
+current = start
+while current <= end:
     now = datetime.now()
-
     try:
         response = requests.post(url, headers=headers, data=data, timeout=10)
         response.raise_for_status()
@@ -60,12 +79,9 @@ for run in range(max_runs):
             ])
 
     print(f"[{now}] データを保存しました ({len(sorted_trains)}件)")
-    time.sleep(interval_minutes * 60)
 
-# 保存結果を表示（読み取り専用 → データ損失なし）
-print("=== 保存結果 ===")
-with open(csv_file, "r", encoding="utf-8-sig") as f:
-    for line in f:
-        print(line.strip())
-print("================")
+    current += timedelta(minutes=interval_minutes)
+    if current <= end:
+        time.sleep(interval_minutes * 60)
 
+print("=== 保存完了 ===")
