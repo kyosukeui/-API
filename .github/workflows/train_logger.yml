@@ -1,10 +1,17 @@
 import requests, time, csv
 from datetime import datetime
 
+# API設定（全角スペースや全角引用符が混ざらないよう注意）
 url = "https://buscatch.jp/rt3/unko_map_simple.ajax.php"
-data = {"id": "chitetsu_train", "command": "get_unko_list", "rosen_group_id": "2235"}
-headers = {"User-Agent": "Mozilla/5.0", "X-Requested-With": "XMLHttpRequest"}
-
+data = {
+    "id": "chitetsu_train",
+    "command": "get_unko_list",
+    "rosen_group_id": "2235"
+}
+headers = {
+    "User-Agent": "Mozilla/5.0",
+    "X-Requested-With": "XMLHttpRequest"
+}
 id_map = {"1001": "デ7011編成", "1002": "デ7012編成", "2001": "デ7021編成"}
 
 date_str = datetime.now().strftime("%Y-%m-%d")
