@@ -5,48 +5,30 @@ url = "https://buscatch.jp/rt3/unko_map_simple.ajax.php"
 data = {"id": "chitetsu_train", "command": "get_unko_list", "rosen_group_id": "2235"}
 headers = {"User-Agent": "Mozilla/5.0", "X-Requested-With": "XMLHttpRequest"}
 
-# 車両ID → 編成名の対応表（未知IDは "ID:xxxx" として出力）
+# 車両ID → 編成名の対応表
 id_map = {
     "1001": "デ7011編成",
     "1002": "デ7012編成",
     "2001": "デ7021編成"
 }
-
-# 編成順を定義（未知IDは最後）
 formation_order = ["デ7011編成", "デ7012編成", "デ7021編成"]
 
-date_str = datetime.now().strftime("%Y-%m-%d")
+# CSVファイル名
+date_str = datetime.now().strftime("%Y-%m-%d_%H-%M")
 csv_file = f"train_log_{date_str}.csv"
 
-# ヘッダ行（utf-8-sigで保存 → Excel対応）
+# ヘッダ行
 with open(csv_file, "w", newline="", encoding="utf-8-sig") as f:
     writer = csv.writer(f)
     writer.writerow(["timestamp", "vehicle_id", "formation_name", "headsign", "station"])
 
-interval_minutes = 20  # 20分ごと
+# 収集条件
+interval_minutes = 20
+duration_minutes = 5 * 60 + 40   # 5時間40分 = 340分
+end_time = datetime.now() + timedelta(minutes=duration_minutes)
 
-# 開始・終了時刻を決定
-now = datetime.now()
-today = now.date()
-tomorrow = today + timedelta(days=1)
-
-if 0 <= now.hour < 5:
-    # 午前0時〜午前5時に起動した場合 → 当日5:00〜翌日0:00
-    start = datetime.combine(today, datetime.strptime("05:00", "%H:%M").time())
-    end   = datetime.combine(today + timedelta(days=1), datetime.strptime("00:00", "%H:%M").time())
-else:
-    # それ以外 → 翌日5:00〜翌々日0:00
-    start = datetime.combine(tomorrow, datetime.strptime("05:00", "%H:%M").time())
-    end   = datetime.combine(tomorrow + timedelta(days=1), datetime.strptime("00:00", "%H:%M").time())
-# 開始時刻まで待機
-if now < start:
-    wait_seconds = (start - now).total_seconds()
-    print(f"Waiting until {start} to start collection...")
-    time.sleep(wait_seconds)
-
-# 20分ごとに収集
-current = start
-while current <= end:
+# ループ開始
+while datetime.now() <= end_time:
     now = datetime.now()
     try:
         response = requests.post(url, headers=headers, data=data, timeout=10)
@@ -57,13 +39,14 @@ while current <= end:
         time.sleep(interval_minutes * 60)
         continue
 
-    # formation_name順にソート（未知IDは最後）
+    # 編成順にソート
     sorted_trains = sorted(
         trains,
         key=lambda t: formation_order.index(id_map.get(str(t.get("vehicle_id")), f"ID:{t.get('vehicle_id')}"))
         if id_map.get(str(t.get("vehicle_id"))) in formation_order else len(formation_order)
     )
 
+    # CSVに追記
     with open(csv_file, "a", newline="", encoding="utf-8-sig") as f:
         writer = csv.writer(f)
         for train in sorted_trains:
@@ -79,9 +62,12 @@ while current <= end:
 
     print(f"[{now}] データを保存しました ({len(sorted_trains)}件)")
 
-    current += timedelta(minutes=interval_minutes)
-    if current <= end:
+    # 次の収集まで待機
+    if datetime.now() + timedelta(minutes=interval_minutes) <= end_time:
         time.sleep(interval_minutes * 60)
 
+print("=== 収集完了 ===")
+
 print("=== 保存完了 ===")
+
 
