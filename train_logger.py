@@ -31,14 +31,13 @@ today = now.date()
 tomorrow = today + timedelta(days=1)
 
 if 0 <= now.hour < 5:
-    # 午前0時〜午前5時に起動した場合 → 当日5:00〜24:00
+    # 午前0時〜午前5時に起動した場合 → 当日5:00〜翌日0:00
     start = datetime.combine(today, datetime.strptime("05:00", "%H:%M").time())
-    end   = datetime.combine(today, datetime.strptime("24:00", "%H:%M").time())
+    end   = datetime.combine(today + timedelta(days=1), datetime.strptime("00:00", "%H:%M").time())
 else:
-    # それ以外 → 翌日5:00〜24:00
+    # それ以外 → 翌日5:00〜翌々日0:00
     start = datetime.combine(tomorrow, datetime.strptime("05:00", "%H:%M").time())
-    end   = datetime.combine(tomorrow, datetime.strptime("24:00", "%H:%M").time())
-
+    end   = datetime.combine(tomorrow + timedelta(days=1), datetime.strptime("00:00", "%H:%M").time())
 # 開始時刻まで待機
 if now < start:
     wait_seconds = (start - now).total_seconds()
@@ -85,3 +84,4 @@ while current <= end:
         time.sleep(interval_minutes * 60)
 
 print("=== 保存完了 ===")
+
