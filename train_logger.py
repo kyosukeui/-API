@@ -12,33 +12,16 @@ id_map = {
     "2001": "デ7021編成"
 }
 
-# 時刻表CSVを読み込む
-timetable = []
-with open("timetable.csv", "r", encoding="utf-8-sig") as tf:
-    reader = csv.DictReader(tf)
-    for row in reader:
-        timetable.append(row)
-
-def find_train_number(station, timestamp):
-    """位置情報と時刻表を突き合わせて列車番号を返す"""
-    ts = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
-    for row in timetable:
-        if row["station"] == station:
-            tt = datetime.strptime(row["time"], "%H:%M").replace(
-                year=ts.year, month=ts.month, day=ts.day
-            )
-            # ±5分以内なら一致とみなす
-            if abs((ts - tt).total_seconds()) <= 300:
-                return row["train_number"]
-    return ""  # 未知なら空欄
+# 編成順を定義（未知IDは最後）
+formation_order = ["デ7011編成", "デ7012編成", "デ7021編成"]
 
 date_str = datetime.now().strftime("%Y-%m-%d")
-csv_file = f"train_log_with_number_{date_str}.csv"
+csv_file = f"train_log_test_{date_str}.csv"
 
 # ヘッダ行（utf-8-sigで保存 → Excel対応）
 with open(csv_file, "w", newline="", encoding="utf-8-sig") as f:
     writer = csv.writer(f)
-    writer.writerow(["timestamp", "vehicle_id", "formation_name", "headsign", "station", "train_number"])
+    writer.writerow(["timestamp", "vehicle_id", "formation_name", "headsign", "station"])
 
 # 5:00〜24:00まで20分ごとに実行
 start_hour, end_hour = 5, 24
@@ -59,7 +42,6 @@ while True:
         continue
 
     # formation_name順にソート（未知IDは最後）
-    formation_order = ["デ7011編成", "デ7012編成", "デ7021編成"]
     sorted_trains = sorted(
         trains,
         key=lambda t: formation_order.index(id_map.get(str(t.get("vehicle_id")), f"ID:{t.get('vehicle_id')}"))
@@ -71,16 +53,20 @@ while True:
         for train in sorted_trains:
             vid = train.get("vehicle_id")
             formation = id_map.get(str(vid), f"ID:{vid}")
-            timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
-            train_number = find_train_number(train.get("teiryujo_name"), timestamp)
             writer.writerow([
-                timestamp,
+                now.strftime("%Y-%m-%d %H:%M:%S"),
                 vid,
                 formation,
                 train.get("headsign"),
-                train.get("teiryujo_name"),
-                train_number
+                train.get("teiryujo_name")
             ])
 
     print(f"[{now}] データを保存しました ({len(sorted_trains)}件)")
     time.sleep(interval_minutes * 60)
+
+# 保存結果を表示（読み取り専用 → データ損失なし）
+print("=== 保存結果 ===")
+with open(csv_file, "r", encoding="utf-8-sig") as f:
+    for line in f:
+        print(line.strip())
+print("================")
