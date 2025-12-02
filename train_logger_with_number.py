@@ -1,5 +1,7 @@
 import requests, time, csv
 from datetime import datetime
+import pandas as pd
+from pathlib import Path
 
 url = "https://buscatch.jp/rt3/unko_map_simple.ajax.php"
 data = {"id": "chitetsu_train", "command": "get_unko_list", "rosen_group_id": "2235"}
@@ -15,22 +17,37 @@ id_map = {
 # 編成順を定義（未知IDは最後）
 formation_order = ["デ7011編成", "デ7012編成", "デ7021編成"]
 
-# 簡易時刻表（試験用）
-timetable = [
-    {"train_number": "501M", "station": "南富山", "time": "05:02"},
-    {"train_number": "842M", "station": "電鉄富山", "time": "08:42"},
-    {"train_number": "1721M", "station": "寺田", "time": "17:20"},
-]
+# === 時刻表CSVの読み込み ===
+year = 2025
+base_dir = Path(f"data/{year}")
+
+# 6ファイルをまとめて読み込む
+timetable = []
+for csv_file in base_dir.glob("timetable2025W_*.csv"):
+    df = pd.read_csv(csv_file)
+    # 各行を辞書化（列名は "列1","列2",... になっている想定）
+    for idx, row in df.iterrows():
+        for col in df.columns:
+            val = str(row[col]).strip()
+            if val and val != "nan":
+                timetable.append({
+                    "train_number": f"{csv_file.stem}_{idx}_{col}",  # 仮の番号付与
+                    "station": col,   # 列名を駅名に対応させる場合はここを調整
+                    "time": val
+                })
 
 def find_train_number(station, timestamp):
     ts = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
     for row in timetable:
         if row["station"] == station:
-            tt = datetime.strptime(row["time"], "%H:%M").replace(
-                year=ts.year, month=ts.month, day=ts.day
-            )
-            if abs((ts - tt).total_seconds()) <= 300:  # ±5分以内なら一致
-                return row["train_number"]
+            try:
+                tt = datetime.strptime(row["time"], "%H:%M").replace(
+                    year=ts.year, month=ts.month, day=ts.day
+                )
+                if abs((ts - tt).total_seconds()) <= 300:  # ±5分以内なら一致
+                    return row["train_number"]
+            except ValueError:
+                continue
     return ""
 
 date_str = datetime.now().strftime("%Y-%m-%d")
@@ -82,7 +99,3 @@ for run in range(max_runs):
     time.sleep(interval_seconds)
 
 print("=== 保存結果 ===")
-with open(csv_file, "r", encoding="utf-8-sig") as f:
-    for line in f:
-        print(line.strip())
-print("================")
