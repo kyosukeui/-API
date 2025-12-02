@@ -23,14 +23,12 @@ with open(csv_file, "w", newline="", encoding="utf-8-sig") as f:
     writer = csv.writer(f)
     writer.writerow(["timestamp", "vehicle_id", "formation_name", "headsign", "station"])
 
-# 5:00〜24:00まで20分ごとに実行
-start_hour, end_hour = 5, 24
-interval_minutes = 20
+# 2〜3回だけ実行して終了
+interval_minutes = 1  # テスト用
+max_runs = 3          # 実行回数制限
 
-while True:
+for run in range(max_runs):
     now = datetime.now()
-    if now.hour < start_hour or now.hour >= end_hour:
-        break  # 実行時間外なら終了
 
     try:
         response = requests.post(url, headers=headers, data=data, timeout=10)
