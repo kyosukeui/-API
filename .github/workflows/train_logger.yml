@@ -20,3 +20,9 @@ jobs:
 
       - name: Run script
         run: python train_logger.py
+        
+      - name: Upload CSV artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: train-log-csv
+          path: train_log_*.csv
