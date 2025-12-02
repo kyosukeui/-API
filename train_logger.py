@@ -24,8 +24,8 @@ with open(csv_file, "w", newline="", encoding="utf-8-sig") as f:
     writer.writerow(["timestamp", "vehicle_id", "formation_name", "headsign", "station"])
 
 # 2〜3回だけ実行して終了
-interval_minutes = 1  # テスト用
-max_runs = 3          # 実行回数制限
+interval_minutes = 20  # 本番用（20分ごと）
+start_hour, end_hour = 5, 24  # 5:00〜24:00まで
 
 for run in range(max_runs):
     now = datetime.now()
@@ -68,3 +68,4 @@ with open(csv_file, "r", encoding="utf-8-sig") as f:
     for line in f:
         print(line.strip())
 print("================")
+
