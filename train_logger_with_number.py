@@ -31,7 +31,7 @@ def load_timetable(path, line_type):
     return timetable
 
 # === 全路線の読み込み ===
-year = 2025W
+year = "2025W"
 base_dir = Path(f"data/{year}")
 
 files = [
