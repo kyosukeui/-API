@@ -5,7 +5,7 @@ url = "https://buscatch.jp/rt3/unko_map_simple.ajax.php"
 data = {"id": "chitetsu_train", "command": "get_unko_list", "rosen_group_id": "2235"}
 headers = {"User-Agent": "Mozilla/5.0", "X-Requested-With": "XMLHttpRequest"}
 
-# 車両ID → 編成名の対応表（順序には使わない）
+# 車両ID → 編成名の対応表（未知IDは "ID:xxxx" として出力）
 id_map = {
     "1001": "デ7011編成",
     "1002": "デ7012編成",
@@ -15,8 +15,8 @@ id_map = {
 date_str = datetime.now().strftime("%Y-%m-%d")
 csv_file = f"train_log_{date_str}.csv"
 
-# ヘッダ行
-with open(csv_file, "w", newline="", encoding="utf-8") as f:
+# ヘッダ行（utf-8-sigで保存 → Excel対応）
+with open(csv_file, "w", newline="", encoding="utf-8-sig") as f:
     writer = csv.writer(f)
     writer.writerow(["timestamp", "vehicle_id", "formation_name", "headsign", "station"])
 
@@ -33,7 +33,7 @@ for i in range(3):
         continue
 
     # APIが返した順序のまま出力
-    with open(csv_file, "a", newline="", encoding="utf-8") as f:
+    with open(csv_file, "a", newline="", encoding="utf-8-sig") as f:
         writer = csv.writer(f)
         for train in trains:
             vid = train.get("vehicle_id")
@@ -49,9 +49,9 @@ for i in range(3):
     print(f"[{now}] データを保存しました ({len(trains)}件)")
     time.sleep(30)
 
+# 保存結果を表示（読み取り専用 → データ損失なし）
 print("=== 保存結果 ===")
-with open(csv_file, "w", newline="", encoding="utf-8-sig") as f:
-    writer = csv.writer(f)
-    writer.writerow(["timestamp", "vehicle_id", "formation_name", "headsign", "station"])
+with open(csv_file, "r", encoding="utf-8-sig") as f:
+    for line in f:
+        print(line.strip())
 print("================")
-
