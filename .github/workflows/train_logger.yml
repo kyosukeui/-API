@@ -1,22 +1,28 @@
-name: Train Logger
+for i in range(3):
+    now = datetime.now()
+    try:
+        response = requests.post(url, headers=headers, data=data, timeout=10)
+        if response.status_code != 200:
+            print(f"[{now}] APIエラー: status={response.status_code}")
+            continue
 
-on:
-  workflow_dispatch:
+        trains = response.json()
+    except Exception as e:
+        print(f"[{now}] 例外が発生しました: {e}")
+        continue
 
-jobs:
-  run-script:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
+    with open(csv_file, "a", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        for train in trains:
+            vid = train.get("vehicle_id")
+            formation = id_map.get(str(vid), f"ID:{vid}")
+            writer.writerow([
+                now.strftime("%Y-%m-%d %H:%M:%S"),
+                vid,
+                formation,
+                train.get("headsign"),
+                train.get("teiryujo_name")
+            ])
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
-
-      - name: Install dependencies
-        run: pip install requests
-
-      - name: Run script
-        run: python train_logger.py
+    print(f"[{now}] データを保存しました ({len(trains)}件)")
+    time.sleep(30)
