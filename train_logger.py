@@ -50,7 +50,8 @@ for i in range(3):
     time.sleep(30)
 
 print("=== 保存結果 ===")
-with open(csv_file, "r", encoding="utf-8") as f:
-    for line in f:
-        print(line.strip())
+with open(csv_file, "w", newline="", encoding="utf-8-sig") as f:
+    writer = csv.writer(f)
+    writer.writerow(["timestamp", "vehicle_id", "formation_name", "headsign", "station"])
 print("================")
+
