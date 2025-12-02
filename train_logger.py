@@ -32,10 +32,12 @@ for i in range(3):
         time.sleep(30)
         continue
 
-    # APIが返した順序のまま出力
+    # vehicle_id を数値に変換して昇順ソート
+    sorted_trains = sorted(trains, key=lambda t: int(t.get("vehicle_id", 0)))
+
     with open(csv_file, "a", newline="", encoding="utf-8-sig") as f:
         writer = csv.writer(f)
-        for train in trains:
+        for train in sorted_trains:
             vid = train.get("vehicle_id")
             formation = id_map.get(str(vid), f"ID:{vid}")
             writer.writerow([
@@ -46,7 +48,7 @@ for i in range(3):
                 train.get("teiryujo_name")
             ])
 
-    print(f"[{now}] データを保存しました ({len(trains)}件)")
+    print(f"[{now}] データを保存しました ({len(sorted_trains)}件)")
     time.sleep(30)
 
 # 保存結果を表示（読み取り専用 → データ損失なし）
