@@ -1,42 +1,24 @@
-import requests
-import time
-import csv
+import requests, time, csv
 from datetime import datetime
 
-# API設定
 url = "https://buscatch.jp/rt3/unko_map_simple.ajax.php"
-data = {
-    "id": "chitetsu_train",
-    "command": "get_unko_list",
-    "rosen_group_id": "2235"
-}
-headers = {
-    "User-Agent": "Mozilla/5.0",
-    "X-Requested-With": "XMLHttpRequest"
-}
+data = {"id": "chitetsu_train", "command": "get_unko_list", "rosen_group_id": "2235"}
+headers = {"User-Agent": "Mozilla/5.0", "X-Requested-With": "XMLHttpRequest"}
 
-# 車両ID → 編成名の対応表
-id_map = {
-    "1001": "デ7011編成",
-    "1002": "デ7012編成",
-    "2001": "デ7021編成"
-}
+id_map = {"1001": "デ7011編成", "1002": "デ7012編成", "2001": "デ7021編成"}
 
-# 日付ごとにCSVファイルを作成
 date_str = datetime.now().strftime("%Y-%m-%d")
 csv_file = f"train_log_{date_str}.csv"
 
-# ヘッダ行を最初に書く
 with open(csv_file, "w", newline="", encoding="utf-8") as f:
     writer = csv.writer(f)
     writer.writerow(["timestamp", "vehicle_id", "formation_name", "headsign", "station"])
 
-# 30秒ごとに3回保存して終了
 for i in range(3):
     now = datetime.now()
     try:
         response = requests.post(url, headers=headers, data=data, timeout=10)
-        response.raise_for_status()  # ステータスコードが200以外なら例外
+        response.raise_for_status()
         trains = response.json()
     except Exception as e:
         print(f"[{now}] エラー発生: {e}")
@@ -59,7 +41,6 @@ for i in range(3):
     print(f"[{now}] データを保存しました ({len(trains)}件)")
     time.sleep(30)
 
-# 保存結果を表示
 print("=== 保存結果 ===")
 with open(csv_file, "r", encoding="utf-8") as f:
     for line in f:
