@@ -1,0 +1,19 @@
+name: Train Logger (Test)
+
+on:
+  workflow_dispatch:   # 手動実行のみ
+
+jobs:
+  run-logger-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - run: python train_logger_test.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: train-log-test-csv
+          path: csv/train_log_test_*.csv
