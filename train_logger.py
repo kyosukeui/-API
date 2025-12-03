@@ -36,8 +36,14 @@ while datetime.now() <= end_time:
         trains = response.json()
     except Exception as e:
         print(f"[{now}] エラー発生: {e}")
-        time.sleep(interval_minutes * 60)
-        continue
+    else:
+        # CSV追記処理...
+        print(f"[{now}] データを保存しました ({len(trains)}件)")
+
+    # 必ず待機する
+    time.sleep(interval_minutes * 60)
+
+print("=== 収集完了 ===")
 
     # 編成順にソート
     sorted_trains = sorted(
@@ -69,5 +75,6 @@ while datetime.now() <= end_time:
 print("=== 収集完了 ===")
 
 print("=== 保存完了 ===")
+
 
 
