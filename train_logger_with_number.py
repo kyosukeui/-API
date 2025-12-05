@@ -123,6 +123,10 @@ try:
         except Exception as e:
             print(f"[{now}] エラー発生: {e}")
         else:
-            sorted_trains = sorted(
-                trains,
-                key=lambda t: formation
+           sorted_trains = sorted(
+    trains,
+    key=lambda t: formation_order.index(
+        id_map.get(str(t.get("vehicle_id")), f"ID:{t.get('vehicle_id')}")
+    )
+    if id_map.get(str(t.get("vehicle_id"))) in formation_order else len(formation_order)
+)
