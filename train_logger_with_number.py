@@ -126,19 +126,24 @@ def find_train_number(station, timestamp, delay_sec, headsign):
            and row["station"] == station
     ]
 
+    best_match = None
+    min_diff = 999999
     for row in candidate_rows:
         try:
             tt = datetime.strptime(row["time"], "%H:%M").replace(
                 year=ts_adjusted.year, month=ts_adjusted.month, day=ts_adjusted.day
             )
-            # 照合範囲を ±10分に拡大
-            if abs((ts_adjusted - tt).total_seconds()) <= 600:
-                return row["train_number"]
+            diff = abs((ts_adjusted - tt).total_seconds())
+            if diff < min_diff:
+                min_diff = diff
+                best_match = row["train_number"]
         except ValueError:
             continue
 
-    # 照合失敗時のデバッグ出力
-    print(f"[DEBUG] 列番なし: 路線={line}, 方向={dirn}, 駅={station}, 時刻={timestamp}, 遅れ={delay_sec}")
+    if best_match and min_diff <= 900:  # ±15分以内なら採用
+        return best_match
+
+    print(f"[DEBUG] 列番なし: 候補={len(candidate_rows)} 最小差分={min_diff}秒 駅={station}, 路線={line}, 方向={dirn}")
     return ""
 # === CSV 初期化 ===
 with open(csv_file, "w", newline="", encoding="utf-8-sig") as f:
