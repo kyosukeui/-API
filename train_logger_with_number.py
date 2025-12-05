@@ -114,37 +114,34 @@ for path, line_type, direction in files:
         timetable.extend(load_timetable(path, line_type, direction))
 
 # === 列番照合関数（遅れ補正＋路線・方向限定＋デバッグ出力） ===
-def find_train_number(station, timestamp, delay_sec, headsign):
-    line, dirn = infer_line_and_direction(headsign)
-    ts = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
-    ts_adjusted = ts - timedelta(seconds=int(delay_sec or 0))
-
-    candidate_rows = [
-        row for row in timetable
-        if (line is None or row["line"] == line)
-           and (dirn is None or row["direction"] == dirn)
-           and row["station"] == station
-    ]
-
-    best_match = None
-    min_diff = 999999
-    for row in candidate_rows:
-        try:
-            tt = datetime.strptime(row["time"], "%H:%M").replace(
-                year=ts_adjusted.year, month=ts_adjusted.month, day=ts_adjusted.day
-            )
-            diff = abs((ts_adjusted - tt).total_seconds())
-            if diff < min_diff:
-                min_diff = diff
-                best_match = row["train_number"]
-        except ValueError:
-            continue
-
-    if best_match and min_diff <= 900:  # ±15分以内なら採用
-        return best_match
-
-    print(f"[DEBUG] 列番なし: 候補={len(candidate_rows)} 最小差分={min_diff}秒 駅={station}, 路線={line}, 方向={dirn}")
-    return ""
+def infer_line_and_direction(headsign: str):
+    if "本線" in headsign:
+        line = "honsen"
+        if "電鉄富山" in headsign:
+            direction = "up"   # 宇奈月温泉→電鉄富山
+        elif "宇奈月温泉" in headsign or "電鉄黒部" in headsign:
+            direction = "down" # 電鉄富山→宇奈月温泉
+        else:
+            direction = None
+    elif "立山線" in headsign:
+        line = "tateyama"
+        if "電鉄富山" in headsign:
+            direction = "up"   # 立山→電鉄富山
+        elif "立山" in headsign:
+            direction = "down" # 電鉄富山→立山
+        else:
+            direction = None
+    elif "不二越・上滝線" in headsign:
+        line = "fuzikoshikamitaki"
+        if "電鉄富山" in headsign:
+            direction = "up"   # 岩峅寺→電鉄富山
+        elif "岩峅寺" in headsign:
+            direction = "down" # 電鉄富山→岩峅寺
+        else:
+            direction = None
+    else:
+        line, direction = None, None
+    return line, direction
 # === CSV 初期化 ===
 with open(csv_file, "w", newline="", encoding="utf-8-sig") as f:
     writer = csv.writer(f)
