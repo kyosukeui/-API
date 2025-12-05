@@ -111,10 +111,12 @@ def find_train_number(station, timestamp, delay_sec, line, dirn):
     ts_adjusted = ts - timedelta(seconds=int(delay_sec or 0))
 
     candidate_rows = [
-        row for row in timetable
-        if (line is None or row["line"] == line)
-           and (dirn is None or row["direction"] == dirn)
-           and row["station"] == station
+    row for row in timetable
+    if (line is None or row["line"] == line)
+       and row["station"] == station
+]
+
+print(f"[DEBUG] API方向={dirn}, CSV方向候補={[row['direction'] for row in candidate_rows]}")
     ]
 
     best_match = None
