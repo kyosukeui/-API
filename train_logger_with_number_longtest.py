@@ -28,57 +28,28 @@ with open(csv_file, "w", newline="", encoding="utf-8-sig") as f:
 interval_minutes = 20
 max_runs = 18
 
-# UTC基準の開始時刻リスト
-UTC = timezone.utc
+# JST基準の開始時刻リスト
+JST = timezone(timedelta(hours=9))
 interval_minutes = 20
 max_runs = 18
 
 # 開始時刻候補
 start_hours = [3, 9, 15, 21]
-now_utc = datetime.now(UTC)
+now_jst = datetime.now(JST)
 
 # 次の開始時刻を決定
 next_start = None
 for h in start_hours:
-    candidate = now_utc.replace(hour=h, minute=0, second=0, microsecond=0)
-    if candidate > now_utc:
+    candidate = now_jst.replace(hour=h, minute=0, second=0, microsecond=0)
+    if candidate > now_jst:
         next_start = candidate
         break
 if next_start is None:
     # 翌日の3時
-    next_start = (now_utc + timedelta(days=1)).replace(hour=3, minute=0, second=0, microsecond=0)
+    next_start = (now_jst + timedelta(days=1)).replace(hour=3, minute=0, second=0, microsecond=0)
 
-# 当日の終了時刻（UTC24時）
-end_of_day = now_utc.replace(hour=23, minute=59, second=59, microsecond=0)
-
-print(f"次の記録開始(UTC): {next_start}, 終了(UTC): {end_of_day}")
-
-# 開始まで待機
-sleep_seconds = (next_start - now_utc).total_seconds()
-if sleep_seconds > 0:
-    time.sleep(sleep_seconds)
-
-# === 記録設定 ===
-interval_minutes = 20
-max_runs = 18
-UTC = timezone.utc
-
-# 開始時刻候補
-start_hours = [3, 9, 15, 21]
-now_utc = datetime.now(UTC)
-
-# 次の開始時刻を決定
-next_start = None
-for h in start_hours:
-    candidate = now_utc.replace(hour=h, minute=0, second=0, microsecond=0)
-    if candidate > now_utc:
-        next_start = candidate
-        break
-if next_start is None:
-    next_start = (now_utc + timedelta(days=1)).replace(hour=3, minute=0, second=0, microsecond=0)
-
-# 当日の終了時刻（UTC24時）
-end_of_day = now_utc.replace(hour=23, minute=59, second=59, microsecond=0)
+# 当日の終了時刻（JST24時）
+end_of_day = now_jst.replace(hour=23, minute=59, second=59, microsecond=0)
 
 print(f"次の記録開始(UTC): {next_start}, 終了(UTC): {end_of_day}")
 
@@ -90,9 +61,9 @@ if sleep_seconds > 0:
 # === 記録ループ ===
 for run in range(max_runs):
     now_utc = datetime.now(UTC)
-    if now_utc >= end_of_day:
-        print("=== UTC24時を過ぎたので終了 ===")
+    if now_jst >= end_of_day:
         break
+
 
     try:
         response = requests.post(url, headers=headers, data=data, timeout=10)
@@ -250,13 +221,6 @@ def find_train_number(station, timestamp, delay_sec, line, dirn):
     print(f"[DEBUG] 候補={len(candidate_rows)} 最小差分={min_diff}秒 駅={station}, 路線={line}, 方向={dirn}")
     return ""
 
-# === CSV 初期化 ===
-with open(csv_file, "w", newline="", encoding="utf-8-sig") as f:
-    writer = csv.writer(f)
-    writer.writerow([
-        "timestamp", "vehicle_id", "formation_name", "headsign", "station", "delay_seconds", "train_number"
-    ])
-
 # === 車両ごとの直前列番を保持 ===
 last_train_numbers = {}
 
@@ -373,3 +337,8 @@ def find_train_number(station, timestamp, delay_sec, line, dirn):
 
     print(f"[DEBUG] 候補={len(candidate_rows)} 最小差分={min_diff}秒 駅={station}, 路線={line}, 方向={dirn}")
     return ""
+
+# === 車両ごとの直前列番を保持 ===
+last_train_numbers = {}
+
+
