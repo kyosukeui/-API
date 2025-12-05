@@ -83,17 +83,20 @@ for fname, line_type in files:
 # === 列車番号検索関数 ===
 def find_train_number(station, timestamp, delay_sec):
     ts = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
-    ts_adjusted = ts - timedelta(seconds=delay_sec or 0)
+    ts_adjusted = ts - timedelta(seconds=int(delay_sec or 0))  # 遅れ補正
     for row in timetable:
         if row["station"] == station:
             try:
                 tt = datetime.strptime(row["time"], "%H:%M").replace(
                     year=ts_adjusted.year, month=ts_adjusted.month, day=ts_adjusted.day
                 )
-                if abs((ts_adjusted - tt).total_seconds()) <= 300:
+                # 照合範囲を ±10分に拡大
+                if abs((ts_adjusted - tt).total_seconds()) <= 600:
                     return row["train_number"]
             except ValueError:
                 continue
+    # 照合失敗時のデバッグ出力
+    print(f"[DEBUG] 列番なし: 駅={station}, 時刻={timestamp}, 遅れ={delay_sec}")
     return ""
 
 # === CSV 初期化 ===
