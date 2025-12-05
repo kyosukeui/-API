@@ -175,12 +175,18 @@ try:
             except Exception:
                 sorted_trains = trains
 
+            # === ここから正しいインデント ===
             with open(csv_file, "a", newline="", encoding="utf-8-sig") as f:
                 writer = csv.writer(f)
                 for train in sorted_trains:
                     vid = train.get("vehicle_id")
                     formation = id_map.get(str(vid), f"ID:{vid}")
-                    station = train.get("teiryujo_name")
+
+                    # 駅名揺れ対策：「駅」が付いている場合は削除
+                    station = train.get("teiryujo_name", "")
+                    if station.endswith("駅"):
+                        station = station[:-1]
+
                     timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
                     delay_sec = int(train.get("delay_sec") or 0)
                     line, dirn = infer_line_and_direction(train)
