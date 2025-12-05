@@ -25,4 +25,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: train-log-with-number
-          path: train_log_with_number_*.csv
+          path: csv/train_log_with_number_*.csv   # ← 修正ポイント
