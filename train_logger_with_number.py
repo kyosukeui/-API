@@ -78,7 +78,5 @@ def find_train_number(station, timestamp):
                 if abs((ts - tt).total_seconds()) <= 300:  # ±5分以内
                     return row["train_number"]
             except ValueError:
-                continue  # ← except と同じインデントに修正
-    return ""
-                continue
+                continue  # ← インデントを except と同じに修正
     return ""
