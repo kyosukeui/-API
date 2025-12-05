@@ -156,8 +156,8 @@ with open(csv_file, "w", newline="", encoding="utf-8-sig") as f:
 last_train_numbers = {}
 
 # === ループ設定 ===
-interval_seconds = 1200  # 20分ごと
-max_runs = 10
+interval_seconds = 30  # 20分ごと
+max_runs = 6
 start_date = datetime.now(JST).date()
 
 try:
