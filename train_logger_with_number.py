@@ -26,34 +26,26 @@ os.makedirs("csv", exist_ok=True)
 date_str = datetime.now(JST).strftime("%Y-%m-%d_%H-%M")
 csv_file = f"csv/train_log_with_number_{date_str}.csv"
 
-# === 路線・方向推定関数 ===
-def infer_line_and_direction(headsign: str):
-    if "本線" in headsign:
+# === 路線・方向判定（APIデータから） ===
+def infer_line_and_direction(train: dict):
+    rosen = train.get("rosen_name", "")
+    if "本線" in rosen:
         line = "honsen"
-        if "電鉄富山" in headsign:
-            direction = "up"
-        elif "宇奈月温泉" in headsign or "電鉄黒部" in headsign:
-            direction = "down"
-        else:
-            direction = None
-    elif "立山線" in headsign:
+    elif "立山線" in rosen:
         line = "tateyama"
-        if "電鉄富山" in headsign:
-            direction = "up"
-        elif "立山" in headsign:
-            direction = "down"
-        else:
-            direction = None
-    elif "不二越・上滝線" in headsign:
+    elif "不二越" in rosen or "上滝" in rosen:
         line = "fuzikoshikamitaki"
-        if "電鉄富山" in headsign:
-            direction = "up"
-        elif "岩峅寺" in headsign:
-            direction = "down"
-        else:
-            direction = None
     else:
-        line, direction = None, None
+        line = None
+
+    dir_flag = train.get("direction") or train.get("updown")
+    if str(dir_flag) == "0":
+        direction = "up"
+    elif str(dir_flag) == "1":
+        direction = "down"
+    else:
+        direction = None
+
     return line, direction
 
 # === 時刻表読み込み関数 ===
@@ -90,7 +82,7 @@ def load_timetable(path, line_type, direction):
 
 # === 休日判定 ===
 today = datetime.now(JST)
-weekday = today.weekday()  # 0=月曜, 6=日曜
+weekday = today.weekday()
 is_holiday = (weekday >= 5) or (
     (today.month == 12 and today.day >= 30) or (today.month == 1 and today.day <= 3)
 )
@@ -113,29 +105,37 @@ for path, line_type, direction in files:
     if path.exists():
         timetable.extend(load_timetable(path, line_type, direction))
 
-# === 列番照合関数（遅れ補正＋路線・方向限定＋デバッグ出力） ===
-def infer_line_and_direction(train: dict):
-    # APIの rosen_name から路線判定
-    rosen = train.get("rosen_name", "")
-    if "本線" in rosen:
-        line = "honsen"
-    elif "立山線" in rosen:
-        line = "tateyama"
-    elif "不二越" in rosen or "上滝" in rosen:
-        line = "fuzikoshikamitaki"
-    else:
-        line = None
+# === 列番照合関数 ===
+def find_train_number(station, timestamp, delay_sec, line, dirn):
+    ts = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
+    ts_adjusted = ts - timedelta(seconds=int(delay_sec or 0))
 
-    # APIの direction/updown から方向判定
-    dir_flag = train.get("direction") or train.get("updown")
-    if dir_flag == "0":
-        direction = "up"
-    elif dir_flag == "1":
-        direction = "down"
-    else:
-        direction = None
+    candidate_rows = [
+        row for row in timetable
+        if (line is None or row["line"] == line)
+           and (dirn is None or row["direction"] == dirn)
+           and row["station"] == station
+    ]
 
-    return line, direction
+    best_match = None
+    min_diff = 999999
+    for row in candidate_rows:
+        try:
+            tt = datetime.strptime(row["time"], "%H:%M").replace(
+                year=ts_adjusted.year, month=ts_adjusted.month, day=ts_adjusted.day
+            )
+            diff = abs((ts_adjusted - tt).total_seconds())
+            if diff < min_diff:
+                min_diff = diff
+                best_match = row["train_number"]
+        except ValueError:
+            continue
+
+    if best_match and min_diff <= 900:  # ±15分以内なら採用
+        return best_match
+
+    print(f"[DEBUG] 候補={len(candidate_rows)} 最小差分={min_diff}秒 駅={station}, 路線={line}, 方向={dirn}")
+    return ""
 # === CSV 初期化 ===
 with open(csv_file, "w", newline="", encoding="utf-8-sig") as f:
     writer = csv.writer(f)
@@ -147,15 +147,14 @@ with open(csv_file, "w", newline="", encoding="utf-8-sig") as f:
 last_train_numbers = {}
 
 # === ループ設定 ===
-interval_seconds = 30  # 20分ごと
-max_runs = 6
+interval_seconds = 30   # 30秒ごと
+max_runs = 3            # 3回実行
 start_date = datetime.now(JST).date()
 
 try:
     for run in range(max_runs):
         now = datetime.now(JST)
         if now.date() != start_date:
-            print(f"[{now}] 日付が変わったため終了します")
             break
 
         try:
@@ -172,8 +171,7 @@ try:
                     )
                     if id_map.get(str(t.get("vehicle_id"))) in formation_order else len(formation_order)
                 )
-            except Exception as e:
-                print(f"[{now}] 並び替えエラー: {e}")
+            except Exception:
                 sorted_trains = trains
 
             with open(csv_file, "a", newline="", encoding="utf-8-sig") as f:
@@ -184,29 +182,28 @@ try:
                     station = train.get("teiryujo_name")
                     timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
                     delay_sec = int(train.get("delay_sec") or 0)
-                    headsign = train.get("headsign", "")
-                    train_number = find_train_number(station, timestamp, delay_sec, headsign)
+                    line, dirn = infer_line_and_direction(train)
+                    train_number = find_train_number(station, timestamp, delay_sec, line, dirn)
 
                     if last_train_numbers.get(vid) != train_number:
                         writer.writerow([
                             timestamp,
                             vid,
                             formation,
-                            headsign,
+                            train.get("headsign", ""),
                             station,
                             delay_sec,
                             train_number
                         ])
                         last_train_numbers[vid] = train_number
-                        print(f"[{now}] {formation} 列番変化 → {train_number}（遅れ {delay_sec}秒）を記録")
 
         except Exception as e:
-            print(f"[{now}] API取得エラー: {e}")
+            print(f"[ERROR] API取得エラー: {e}")
 
         if run < max_runs - 1:
             time.sleep(interval_seconds)
 
 except KeyboardInterrupt:
-    print("=== 手動終了が検出されました ===")
+    print("=== 手動終了 ===")
 finally:
     print("=== 保存完了 ===")
