@@ -30,10 +30,14 @@ max_runs = 18
 
 # UTC基準の開始時刻リスト
 UTC = timezone.utc
+interval_minutes = 20
+max_runs = 18
+
+# 開始時刻候補
 start_hours = [3, 9, 15, 21]
+now_utc = datetime.now(UTC)
 
 # 次の開始時刻を決定
-now_utc = datetime.now(UTC)
 next_start = None
 for h in start_hours:
     candidate = now_utc.replace(hour=h, minute=0, second=0, microsecond=0)
@@ -41,22 +45,31 @@ for h in start_hours:
         next_start = candidate
         break
 if next_start is None:
-    # 翌日の3時に設定
+    # 翌日の3時
     next_start = (now_utc + timedelta(days=1)).replace(hour=3, minute=0, second=0, microsecond=0)
 
-print(f"次の記録開始時刻(UTC): {next_start}")
+# 当日の終了時刻（UTC24時）
+end_of_day = now_utc.replace(hour=23, minute=59, second=59, microsecond=0)
 
-# === 待機 ===
+print(f"次の記録開始(UTC): {next_start}, 終了(UTC): {end_of_day}")
+
+# 開始まで待機
 sleep_seconds = (next_start - now_utc).total_seconds()
-time.sleep(sleep_seconds)
+if sleep_seconds > 0:
+    time.sleep(sleep_seconds)
 
-# === 記録ループ ===
+# 記録ループ
 for run in range(max_runs):
-    now = datetime.now(JST)
-    try:
-        response = requests.post(url, headers=headers, data=data, timeout=10)
-        response.raise_for_status()
-        trains = response.json()
+    now_utc = datetime.now(UTC)
+    if now_utc >= end_of_day:
+        print("=== UTC24時を過ぎたので終了 ===")
+        break
+
+    # ここでAPI取得＆CSV書き込み処理
+    print(f"[INFO] 記録 {run+1}/{max_runs} 実行時刻(UTC): {now_utc}")
+
+    if run < max_runs - 1:
+        time.sleep(interval_minutes * 60)
 
         # 並び替え（編成順）
         try:
