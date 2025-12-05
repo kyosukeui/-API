@@ -26,8 +26,38 @@ os.makedirs("csv", exist_ok=True)
 date_str = datetime.now(JST).strftime("%Y-%m-%d_%H-%M")
 csv_file = f"csv/train_log_with_number_{date_str}.csv"
 
+# === 路線・方向推定関数 ===
+def infer_line_and_direction(headsign: str):
+    if "本線" in headsign:
+        line = "honsen"
+        if "電鉄富山" in headsign:
+            direction = "up"
+        elif "宇奈月温泉" in headsign or "電鉄黒部" in headsign:
+            direction = "down"
+        else:
+            direction = None
+    elif "立山線" in headsign:
+        line = "tateyama"
+        if "電鉄富山" in headsign:
+            direction = "up"
+        elif "立山" in headsign:
+            direction = "down"
+        else:
+            direction = None
+    elif "不二越・上滝線" in headsign:
+        line = "fuzikoshikamitaki"
+        if "電鉄富山" in headsign:
+            direction = "up"
+        elif "岩峅寺" in headsign:
+            direction = "down"
+        else:
+            direction = None
+    else:
+        line, direction = None, None
+    return line, direction
+
 # === 時刻表読み込み関数 ===
-def load_timetable(path, line_type):
+def load_timetable(path, line_type, direction):
     df = pd.read_csv(path)
     timetable = []
     if line_type == "honsen":  # 駅が行方向
@@ -37,6 +67,8 @@ def load_timetable(path, line_type):
                 val = row[col]
                 if pd.notna(val) and val not in ["レ", "(止)"]:
                     timetable.append({
+                        "line": line_type,
+                        "direction": direction,
                         "train_number": str(col),
                         "station": station,
                         "time": str(val)
@@ -48,6 +80,8 @@ def load_timetable(path, line_type):
                 val = row[station]
                 if pd.notna(val) and val not in ["レ", "(止)"]:
                     timetable.append({
+                        "line": line_type,
+                        "direction": direction,
                         "train_number": str(train_number),
                         "station": station,
                         "time": str(val)
@@ -66,39 +100,46 @@ suffix = "holiday" if is_holiday else "weekday"
 year = "2025W"
 base_dir = Path(f"data/{year}")
 files = [
-    (f"timetable2025W_honsen_down_{suffix}.csv", "honsen"),
-    (f"timetable2025W_honsen_up_{suffix}.csv", "honsen"),
-    (f"timetable2025W_fuzikoshikamitaki_down_{suffix}.csv", "fuzikoshikamitaki"),
-    (f"timetable2025W_fuzikoshikamitaki_up_{suffix}.csv", "fuzikoshikamitaki"),
-    (f"timetable2025W_tateyama_down_{suffix}.csv", "tateyama"),
-    (f"timetable2025W_tateyama_up_{suffix}.csv", "tateyama"),
+    (base_dir / f"timetable2025W_honsen_down_{suffix}.csv", "honsen", "down"),
+    (base_dir / f"timetable2025W_honsen_up_{suffix}.csv",   "honsen", "up"),
+    (base_dir / f"timetable2025W_fuzikoshikamitaki_down_{suffix}.csv", "fuzikoshikamitaki", "down"),
+    (base_dir / f"timetable2025W_fuzikoshikamitaki_up_{suffix}.csv",   "fuzikoshikamitaki", "up"),
+    (base_dir / f"timetable2025W_tateyama_down_{suffix}.csv", "tateyama", "down"),
+    (base_dir / f"timetable2025W_tateyama_up_{suffix}.csv",   "tateyama", "up"),
 ]
 
 timetable = []
-for fname, line_type in files:
-    path = base_dir / fname
+for path, line_type, direction in files:
     if path.exists():
-        timetable.extend(load_timetable(path, line_type))
+        timetable.extend(load_timetable(path, line_type, direction))
 
-# === 列車番号検索関数 ===
-def find_train_number(station, timestamp, delay_sec):
+# === 列番照合関数（遅れ補正＋路線・方向限定＋デバッグ出力） ===
+def find_train_number(station, timestamp, delay_sec, headsign):
+    line, dirn = infer_line_and_direction(headsign)
     ts = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
-    ts_adjusted = ts - timedelta(seconds=int(delay_sec or 0))  # 遅れ補正
-    for row in timetable:
-        if row["station"] == station:
-            try:
-                tt = datetime.strptime(row["time"], "%H:%M").replace(
-                    year=ts_adjusted.year, month=ts_adjusted.month, day=ts_adjusted.day
-                )
-                # 照合範囲を ±10分に拡大
-                if abs((ts_adjusted - tt).total_seconds()) <= 600:
-                    return row["train_number"]
-            except ValueError:
-                continue
-    # 照合失敗時のデバッグ出力
-    print(f"[DEBUG] 列番なし: 駅={station}, 時刻={timestamp}, 遅れ={delay_sec}")
-    return ""
+    ts_adjusted = ts - timedelta(seconds=int(delay_sec or 0))
 
+    candidate_rows = [
+        row for row in timetable
+        if (line is None or row["line"] == line)
+           and (dirn is None or row["direction"] == dirn)
+           and row["station"] == station
+    ]
+
+    for row in candidate_rows:
+        try:
+            tt = datetime.strptime(row["time"], "%H:%M").replace(
+                year=ts_adjusted.year, month=ts_adjusted.month, day=ts_adjusted.day
+            )
+            # 照合範囲を ±10分に拡大
+            if abs((ts_adjusted - tt).total_seconds()) <= 600:
+                return row["train_number"]
+        except ValueError:
+            continue
+
+    # 照合失敗時のデバッグ出力
+    print(f"[DEBUG] 列番なし: 路線={line}, 方向={dirn}, 駅={station}, 時刻={timestamp}, 遅れ={delay_sec}")
+    return ""
 # === CSV 初期化 ===
 with open(csv_file, "w", newline="", encoding="utf-8-sig") as f:
     writer = csv.writer(f)
@@ -110,8 +151,8 @@ with open(csv_file, "w", newline="", encoding="utf-8-sig") as f:
 last_train_numbers = {}
 
 # === ループ設定 ===
-interval_seconds = 30  # ← 30秒ごと
-max_runs = 3           # ← 3回実行
+interval_seconds = 1200  # 20分ごと
+max_runs = 10
 start_date = datetime.now(JST).date()
 
 try:
@@ -146,15 +187,16 @@ try:
                     formation = id_map.get(str(vid), f"ID:{vid}")
                     station = train.get("teiryujo_name")
                     timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
-                    delay_sec = train.get("delay_sec") or 0
-                    train_number = find_train_number(station, timestamp, delay_sec)
+                    delay_sec = int(train.get("delay_sec") or 0)
+                    headsign = train.get("headsign", "")
+                    train_number = find_train_number(station, timestamp, delay_sec, headsign)
 
                     if last_train_numbers.get(vid) != train_number:
                         writer.writerow([
                             timestamp,
                             vid,
                             formation,
-                            train.get("headsign"),
+                            headsign,
                             station,
                             delay_sec,
                             train_number
