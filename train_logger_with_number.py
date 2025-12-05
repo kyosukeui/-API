@@ -105,8 +105,7 @@ last_train_numbers = {}
 
 # === ループ設定 ===
 interval_seconds = 1200  # 20分ごと
-max_runs = 10            # 実行回数上限（例）
-
+max_runs = 10
 start_date = datetime.now(JST).date()
 
 try:
@@ -120,13 +119,48 @@ try:
             response = requests.post(url, headers=headers, data=data, timeout=10)
             response.raise_for_status()
             trains = response.json()
+
+            # 並び替え（編成順）
+            try:
+                sorted_trains = sorted(
+                    trains,
+                    key=lambda t: formation_order.index(
+                        id_map.get(str(t.get("vehicle_id")), f"ID:{t.get('vehicle_id')}")
+                    )
+                    if id_map.get(str(t.get("vehicle_id"))) in formation_order else len(formation_order)
+                )
+            except Exception as e:
+                print(f"[{now}] 並び替えエラー: {e}")
+                sorted_trains = trains
+
+            with open(csv_file, "a", newline="", encoding="utf-8-sig") as f:
+                writer = csv.writer(f)
+                for train in sorted_trains:
+                    vid = train.get("vehicle_id")
+                    formation = id_map.get(str(vid), f"ID:{vid}")
+                    station = train.get("teiryujo_name")
+                    timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
+                    train_number = find_train_number(station, timestamp)
+
+                    if last_train_numbers.get(vid) != train_number:
+                        writer.writerow([
+                            timestamp,
+                            vid,
+                            formation,
+                            train.get("headsign"),
+                            station,
+                            train_number
+                        ])
+                        last_train_numbers[vid] = train_number
+                        print(f"[{now}] {formation} 列番変化 → {train_number} を記録")
+
         except Exception as e:
-            print(f"[{now}] エラー発生: {e}")
-        else:
-           sorted_trains = sorted(
-    trains,
-    key=lambda t: formation_order.index(
-        id_map.get(str(t.get("vehicle_id")), f"ID:{t.get('vehicle_id')}")
-    )
-    if id_map.get(str(t.get("vehicle_id"))) in formation_order else len(formation_order)
-)
+            print(f"[{now}] API取得エラー: {e}")
+
+        if run < max_runs - 1:
+            time.sleep(interval_seconds)
+
+except KeyboardInterrupt:
+    print("=== 手動終了が検出されました ===")
+finally:
+    print("=== 保存完了 ===")
