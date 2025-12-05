@@ -6,11 +6,13 @@ data = {"id": "chitetsu_train", "command": "get_unko_list", "rosen_group_id": "2
 headers = {"User-Agent": "Mozilla/5.0", "X-Requested-With": "XMLHttpRequest"}
 
 id_map = {
-    "1001": "デ7011編成",
-    "1002": "デ7012編成",
-    "2001": "デ7021編成"
+    "5747": "10041F",
+    "5760": "17485F",
+    "6013": "14773F",
+    "5902": "あお",
+    "5883": "17481F"
 }
-formation_order = ["デ7011編成", "デ7012編成", "デ7021編成"]
+formation_order = ["10041F", "14773F", "17481F","17485F","あお"]
 
 JST = timezone(timedelta(hours=9))
 os.makedirs("csv", exist_ok=True)
@@ -66,3 +68,4 @@ except KeyboardInterrupt:
     print("=== 手動終了が検出されました ===")
 finally:
     print("=== 保存完了 ===")
+
