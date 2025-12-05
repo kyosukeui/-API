@@ -58,18 +58,46 @@ sleep_seconds = (next_start - now_utc).total_seconds()
 if sleep_seconds > 0:
     time.sleep(sleep_seconds)
 
-# 記録ループ
+# === 記録設定 ===
+interval_minutes = 20
+max_runs = 18
+UTC = timezone.utc
+
+# 開始時刻候補
+start_hours = [3, 9, 15, 21]
+now_utc = datetime.now(UTC)
+
+# 次の開始時刻を決定
+next_start = None
+for h in start_hours:
+    candidate = now_utc.replace(hour=h, minute=0, second=0, microsecond=0)
+    if candidate > now_utc:
+        next_start = candidate
+        break
+if next_start is None:
+    next_start = (now_utc + timedelta(days=1)).replace(hour=3, minute=0, second=0, microsecond=0)
+
+# 当日の終了時刻（UTC24時）
+end_of_day = now_utc.replace(hour=23, minute=59, second=59, microsecond=0)
+
+print(f"次の記録開始(UTC): {next_start}, 終了(UTC): {end_of_day}")
+
+# 開始まで待機
+sleep_seconds = (next_start - now_utc).total_seconds()
+if sleep_seconds > 0:
+    time.sleep(sleep_seconds)
+
+# === 記録ループ ===
 for run in range(max_runs):
     now_utc = datetime.now(UTC)
     if now_utc >= end_of_day:
         print("=== UTC24時を過ぎたので終了 ===")
         break
 
-    # ここでAPI取得＆CSV書き込み処理
-    print(f"[INFO] 記録 {run+1}/{max_runs} 実行時刻(UTC): {now_utc}")
-
-    if run < max_runs - 1:
-        time.sleep(interval_minutes * 60)
+    try:
+        response = requests.post(url, headers=headers, data=data, timeout=10)
+        response.raise_for_status()
+        trains = response.json()
 
         # 並び替え（編成順）
         try:
@@ -93,7 +121,7 @@ for run in range(max_runs):
                     station = station[:-1]
 
                 writer.writerow([
-                    now.strftime("%Y-%m-%d %H:%M:%S"),
+                    datetime.now(JST).strftime("%Y-%m-%d %H:%M:%S"),
                     vid,
                     formation,
                     train.get("headsign", ""),
@@ -231,69 +259,6 @@ with open(csv_file, "w", newline="", encoding="utf-8-sig") as f:
 # === 車両ごとの直前列番を保持 ===
 last_train_numbers = {}
 
-# === ループ設定 ===
-interval_seconds = 30   # 30秒ごと
-max_runs = 3            # 3回実行
-start_date = datetime.now(JST).date()
-
-try:
-    for run in range(max_runs):
-        now = datetime.now(JST)
-        if now.date() != start_date:
-            break
-
-        try:
-            response = requests.post(url, headers=headers, data=data, timeout=10)
-            response.raise_for_status()
-            trains = response.json()
-
-            # 並び替え（編成順）
-            try:
-                sorted_trains = sorted(
-                    trains,
-                    key=lambda t: formation_order.index(
-                        id_map.get(str(t.get("vehicle_id")), f"ID:{t.get('vehicle_id')}")
-                    )
-                    if id_map.get(str(t.get("vehicle_id"))) in formation_order else len(formation_order)
-                )
-            except Exception:
-                sorted_trains = trains
-
-            # === ここから正しいインデント ===
-            with open(csv_file, "a", newline="", encoding="utf-8-sig") as f:
-                writer = csv.writer(f)
-                for train in sorted_trains:
-                    vid = train.get("vehicle_id")
-                    formation = id_map.get(str(vid), f"ID:{vid}")
-
-                    # 駅名揺れ対策：「駅」が付いている場合は削除
-                    station = train.get("teiryujo_name", "")
-                    if station.endswith("駅"):
-                        station = station[:-1]
-
-                    timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
-                    delay_sec = int(train.get("delay_sec") or 0)
-                    line, dirn = infer_line_and_direction(train)
-                    train_number = find_train_number(station, timestamp, delay_sec, line, dirn)
-
-                    # 常に追記する
-                    writer.writerow([
-                        timestamp,
-                        vid,
-                        formation,
-                        train.get("headsign", ""),
-                        station,
-                        delay_sec,
-                        train_number
-                    ])
-                    # last_train_numbers は保持してもよいが、追記制御には使わない
-                    last_train_numbers[vid] = train_number
-
-        except Exception as e:
-            print(f"[ERROR] API取得エラー: {e}")
-
-        if run < max_runs - 1:
-            time.sleep(interval_seconds)
 
 except KeyboardInterrupt:
     print("=== 手動終了 ===")
