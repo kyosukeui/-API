@@ -25,7 +25,7 @@ with open(csv_file, "w", newline="", encoding="utf-8-sig") as f:
     writer.writerow(["timestamp", "vehicle_id", "formation_name", "headsign", "station"])
 
 interval_minutes = 20
-max_runs = 17
+max_runs = 18
 start_date = datetime.now(JST).date()
 
 try:
@@ -68,4 +68,5 @@ except KeyboardInterrupt:
     print("=== 手動終了が検出されました ===")
 finally:
     print("=== 保存完了 ===")
+
 
