@@ -81,15 +81,16 @@ for fname, line_type in files:
         timetable.extend(load_timetable(path, line_type))
 
 # === 列車番号検索関数 ===
-def find_train_number(station, timestamp):
+def find_train_number(station, timestamp, delay_sec):
     ts = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
+    ts_adjusted = ts - timedelta(seconds=delay_sec or 0)
     for row in timetable:
         if row["station"] == station:
             try:
                 tt = datetime.strptime(row["time"], "%H:%M").replace(
-                    year=ts.year, month=ts.month, day=ts.day
+                    year=ts_adjusted.year, month=ts_adjusted.month, day=ts_adjusted.day
                 )
-                if abs((ts - tt).total_seconds()) <= 300:  # ±5分以内
+                if abs((ts_adjusted - tt).total_seconds()) <= 300:
                     return row["train_number"]
             except ValueError:
                 continue
@@ -98,14 +99,16 @@ def find_train_number(station, timestamp):
 # === CSV 初期化 ===
 with open(csv_file, "w", newline="", encoding="utf-8-sig") as f:
     writer = csv.writer(f)
-    writer.writerow(["timestamp", "vehicle_id", "formation_name", "headsign", "station", "train_number"])
+    writer.writerow([
+        "timestamp", "vehicle_id", "formation_name", "headsign", "station", "delay_seconds", "train_number"
+    ])
 
 # === 車両ごとの直前列番を保持 ===
 last_train_numbers = {}
 
 # === ループ設定 ===
-interval_seconds = 30
-max_runs = 6
+interval_seconds = 30  # ← 30秒ごと
+max_runs = 3           # ← 3回実行
 start_date = datetime.now(JST).date()
 
 try:
@@ -140,7 +143,8 @@ try:
                     formation = id_map.get(str(vid), f"ID:{vid}")
                     station = train.get("teiryujo_name")
                     timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
-                    train_number = find_train_number(station, timestamp)
+                    delay_sec = train.get("delay_sec") or 0
+                    train_number = find_train_number(station, timestamp, delay_sec)
 
                     if last_train_numbers.get(vid) != train_number:
                         writer.writerow([
@@ -149,10 +153,11 @@ try:
                             formation,
                             train.get("headsign"),
                             station,
+                            delay_sec,
                             train_number
                         ])
                         last_train_numbers[vid] = train_number
-                        print(f"[{now}] {formation} 列番変化 → {train_number} を記録")
+                        print(f"[{now}] {formation} 列番変化 → {train_number}（遅れ {delay_sec}秒）を記録")
 
         except Exception as e:
             print(f"[{now}] API取得エラー: {e}")
