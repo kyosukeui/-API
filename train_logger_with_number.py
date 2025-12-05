@@ -136,6 +136,7 @@ def find_train_number(station, timestamp, delay_sec, line, dirn):
 
     print(f"[DEBUG] 候補={len(candidate_rows)} 最小差分={min_diff}秒 駅={station}, 路線={line}, 方向={dirn}")
     return ""
+
 # === CSV 初期化 ===
 with open(csv_file, "w", newline="", encoding="utf-8-sig") as f:
     writer = csv.writer(f)
