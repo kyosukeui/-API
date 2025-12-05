@@ -196,7 +196,8 @@ try:
                         train_number
                     ])
 # last_train_numbers は保持してもよいが、追記制御には使わない
-last_train_numbers[vid] = train_numberif last_train_numbers.get(vid) != train_number:
+last_train_numbers[vid] = train_number
+if last_train_numbers.get(vid) != train_number:
                         writer.writerow([
                             timestamp,
                             vid,
