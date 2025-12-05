@@ -114,33 +114,27 @@ for path, line_type, direction in files:
         timetable.extend(load_timetable(path, line_type, direction))
 
 # === 列番照合関数（遅れ補正＋路線・方向限定＋デバッグ出力） ===
-def infer_line_and_direction(headsign: str):
-    if "本線" in headsign:
+def infer_line_and_direction(train: dict):
+    # APIの rosen_name から路線判定
+    rosen = train.get("rosen_name", "")
+    if "本線" in rosen:
         line = "honsen"
-        if "電鉄富山" in headsign:
-            direction = "up"   # 宇奈月温泉→電鉄富山
-        elif "宇奈月温泉" in headsign or "電鉄黒部" in headsign:
-            direction = "down" # 電鉄富山→宇奈月温泉
-        else:
-            direction = None
-    elif "立山線" in headsign:
+    elif "立山線" in rosen:
         line = "tateyama"
-        if "電鉄富山" in headsign:
-            direction = "up"   # 立山→電鉄富山
-        elif "立山" in headsign:
-            direction = "down" # 電鉄富山→立山
-        else:
-            direction = None
-    elif "不二越・上滝線" in headsign:
+    elif "不二越" in rosen or "上滝" in rosen:
         line = "fuzikoshikamitaki"
-        if "電鉄富山" in headsign:
-            direction = "up"   # 岩峅寺→電鉄富山
-        elif "岩峅寺" in headsign:
-            direction = "down" # 電鉄富山→岩峅寺
-        else:
-            direction = None
     else:
-        line, direction = None, None
+        line = None
+
+    # APIの direction/updown から方向判定
+    dir_flag = train.get("direction") or train.get("updown")
+    if dir_flag == "0":
+        direction = "up"
+    elif dir_flag == "1":
+        direction = "down"
+    else:
+        direction = None
+
     return line, direction
 # === CSV 初期化 ===
 with open(csv_file, "w", newline="", encoding="utf-8-sig") as f:
