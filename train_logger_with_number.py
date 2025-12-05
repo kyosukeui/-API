@@ -110,14 +110,15 @@ def find_train_number(station, timestamp, delay_sec, line, dirn):
     ts = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
     ts_adjusted = ts - timedelta(seconds=int(delay_sec or 0))
 
+    # 方向一致を追加
     candidate_rows = [
-    row for row in timetable
-    if (line is None or row["line"] == line)
-       and row["station"] == station
-]
-
-print(f"[DEBUG] API方向={dirn}, CSV方向候補={[row['direction'] for row in candidate_rows]}")
+        row for row in timetable
+        if (line is None or row["line"] == line)
+           and (dirn is None or row["direction"] == dirn)
+           and row["station"] == station
     ]
+
+    print(f"[DEBUG] API方向={dirn}, CSV方向候補={[row['direction'] for row in candidate_rows]}")
 
     best_match = None
     min_diff = 999999
