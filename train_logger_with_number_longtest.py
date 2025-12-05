@@ -29,11 +29,6 @@ interval_minutes = 20
 max_runs = 18
 
 # JST基準の開始時刻リスト
-JST = timezone(timedelta(hours=9))
-interval_minutes = 20
-max_runs = 18
-
-# 開始時刻候補
 start_hours = [3, 9, 15, 21]
 now_jst = datetime.now(JST)
 
@@ -57,7 +52,6 @@ print(f"次の記録開始(JST): {next_start}, 終了(JST): {end_of_day}")
 sleep_seconds = (next_start - now_jst).total_seconds()
 if sleep_seconds > 0:
     time.sleep(sleep_seconds)
-
 # === 記録ループ ===
 for run in range(max_runs):
     now_jst = datetime.now(JST)
