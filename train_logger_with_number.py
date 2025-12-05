@@ -185,7 +185,7 @@ try:
                     line, dirn = infer_line_and_direction(train)
                     train_number = find_train_number(station, timestamp, delay_sec, line, dirn)
 
-                    # 約140行目に相当：常に追記するように変更
+                    # 常に追記する
                     writer.writerow([
                         timestamp,
                         vid,
@@ -195,19 +195,8 @@ try:
                         delay_sec,
                         train_number
                     ])
-# last_train_numbers は保持してもよいが、追記制御には使わない
-last_train_numbers[vid] = train_number
-if last_train_numbers.get(vid) != train_number:
-                        writer.writerow([
-                            timestamp,
-                            vid,
-                            formation,
-                            train.get("headsign", ""),
-                            station,
-                            delay_sec,
-                            train_number
-                        ])
-                        last_train_numbers[vid] = train_number
+                    # last_train_numbers は保持してもよいが、追記制御には使わない
+                    last_train_numbers[vid] = train_number
 
         except Exception as e:
             print(f"[ERROR] API取得エラー: {e}")
