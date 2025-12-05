@@ -51,17 +51,18 @@ if next_start is None:
 # 当日の終了時刻（JST24時）
 end_of_day = now_jst.replace(hour=23, minute=59, second=59, microsecond=0)
 
-print(f"次の記録開始(UTC): {next_start}, 終了(UTC): {end_of_day}")
+print(f"次の記録開始(JST): {next_start}, 終了(JST): {end_of_day}")
 
 # 開始まで待機
-sleep_seconds = (next_start - now_utc).total_seconds()
+sleep_seconds = (next_start - now_jst).total_seconds()
 if sleep_seconds > 0:
     time.sleep(sleep_seconds)
 
 # === 記録ループ ===
 for run in range(max_runs):
-    now_utc = datetime.now(UTC)
+    now_jst = datetime.now(JST)
     if now_jst >= end_of_day:
+        print("=== JST24時を過ぎたので終了 ===")
         break
 
 
