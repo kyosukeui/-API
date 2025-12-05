@@ -100,9 +100,13 @@ with open(csv_file, "w", newline="", encoding="utf-8-sig") as f:
     writer = csv.writer(f)
     writer.writerow(["timestamp", "vehicle_id", "formation_name", "headsign", "station", "train_number"])
 
+# === 車両ごとの直前列番を保持 ===
+last_train_numbers = {}
+
 # === ループ設定 ===
-interval_seconds = 30
-max_runs = 3
+interval_seconds = 1200  # 20分ごと
+max_runs = 10            # 実行回数上限（例）
+
 start_date = datetime.now(JST).date()
 
 try:
@@ -121,31 +125,4 @@ try:
         else:
             sorted_trains = sorted(
                 trains,
-                key=lambda t: formation_order.index(id_map.get(str(t.get("vehicle_id")), f"ID:{t.get('vehicle_id')}"))
-                if id_map.get(str(t.get("vehicle_id"))) in formation_order else len(formation_order)
-            )
-            with open(csv_file, "a", newline="", encoding="utf-8-sig") as f:
-                writer = csv.writer(f)
-                for train in sorted_trains:
-                    vid = train.get("vehicle_id")
-                    formation = id_map.get(str(vid), f"ID:{vid}")
-                    station = train.get("teiryujo_name")
-                    timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
-                    train_number = find_train_number(station, timestamp)
-                    writer.writerow([
-                        timestamp,
-                        vid,
-                        formation,
-                        train.get("headsign"),
-                        station,
-                        train_number
-                    ])
-            print(f"[{now}] データを保存しました ({len(sorted_trains)}件)")
-
-        if run < max_runs - 1:
-            time.sleep(interval_seconds)
-
-except KeyboardInterrupt:
-    print("=== 手動終了が検出されました ===")
-finally:
-    print("=== 保存完了 ===")
+                key=lambda t: formation
