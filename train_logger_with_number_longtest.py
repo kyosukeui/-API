@@ -224,3 +224,5 @@ last_train_numbers = {}
 last_train_numbers = {}
 
 
+print("[DEBUG] APIレスポンス:", trains)
+print("[DEBUG] sorted_trains:", sorted_trains)
