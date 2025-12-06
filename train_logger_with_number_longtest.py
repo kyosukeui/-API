@@ -1,6 +1,7 @@
 import requests, time, csv, os
 from datetime import datetime, timedelta, timezone
-from pathlib import Path   # ← これを追加
+from pathlib import Path
+import pandas as pd
 
 url = "https://buscatch.jp/rt3/unko_map_simple.ajax.php"
 data = {"id": "chitetsu_train", "command": "get_unko_list", "rosen_group_id": "2235"}
