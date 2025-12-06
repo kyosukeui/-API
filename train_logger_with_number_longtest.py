@@ -190,32 +190,32 @@ for run in range(max_runs):
             sorted_trains = trains
 
         with open(csv_file, "a", newline="", encoding="utf-8-sig") as f:
-  　　　　  writer = csv.writer(f)
-  　　　　  for train in sorted_trains:
-      　　　　  # ← ここでrosen_nameを出力する
-      　　　　  print("[DEBUG] rosen_name:", train.get("rosen_name", ""))
-      　　　　  print("[DEBUG] keito_name:", train.get("keito_name", ""))  # ← 路線名はこっちの方が確実
+        writer = csv.writer(f)
+        for train in sorted_trains:
+            # ← ここでrosen_nameを出力する
+            print("[DEBUG] rosen_name:", train.get("rosen_name", ""))
+            print("[DEBUG] keito_name:", train.get("keito_name", ""))  # ← 路線名はこっちの方が確実
 
-      　　　　  vid = train.get("vehicle_id")
-      　　　　  formation = id_map.get(str(vid), f"ID:{vid}")
-      　　　　  station = train.get("teiryujo_name", "")
-      　　　　  if station.endswith("駅"):
-      　　　　      station = station[:-1]
+            vid = train.get("vehicle_id")
+            formation = id_map.get(str(vid), f"ID:{vid}")
+            station = train.get("teiryujo_name", "")
+            if station.endswith("駅"):
+                station = station[:-1]
 
-      　　　　  timestamp = datetime.now(JST).strftime("%Y-%m-%d %H:%M")
-       　　　　 line, dirn = infer_line_and_direction(train)
-       　　　　 delay_sec = train.get("delay_sec", 0)
+            timestamp = datetime.now(JST).strftime("%Y-%m-%d %H:%M")
+            line, dirn = infer_line_and_direction(train)
+            delay_sec = train.get("delay_sec", 0)
 
-   　　　　     train_number = find_train_number(station, timestamp, delay_sec, line, dirn)
+            train_number = find_train_number(station, timestamp, delay_sec, line, dirn)
 
-   　　　　     writer.writerow([
-                    timestamp,
-                    vid,
-       　　　　　    formation,
-        　　　　　   train_number,
-        　　　　　   train.get("headsign", ""),
-                    station
-               ])
+            writer.writerow([
+                timestamp,
+                vid,
+                formation,
+                train.get("headsign", ""),
+                station,
+                train_number
+            ])
 
     except Exception as e:
         print(f"[ERROR] API取得エラー: {e}")
