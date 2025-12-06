@@ -76,7 +76,7 @@ for run in range(max_runs):
                 if station.endswith("駅"):
                     station = station[:-1]
 
-                timestamp = datetime.now(JST).strftime("%Y-%m-%d %H:%M:%S")
+                timestamp = datetime.now(JST).strftime("%Y-%m-%d %H:%M")
                 line, dirn = infer_line_and_direction(train)
                 delay_sec = train.get("delay_sec", 0)
 
@@ -210,7 +210,9 @@ def find_train_number(station, timestamp, delay_sec, line, dirn):
 
     if best_match and min_diff <= 900:  # ±15分以内なら採用
         return best_match
-
+ 
+print(f"[DEBUG] 候補={len(candidate_rows)} 最小差分={min_diff}秒 駅={station}, 路線={line}, 方向={dirn}")
+return "合致なし"   # ← 空文字ではなく「合致なし」
     print(f"[DEBUG] 候補={len(candidate_rows)} 最小差分={min_diff}秒 駅={station}, 路線={line}, 方向={dirn}")
     return ""
 
