@@ -127,7 +127,10 @@ timetable = []
 for path, line_type, direction in files:
     if path.exists():
         timetable.extend(load_timetable(path, line_type, direction))
-
+for train in sorted_trains:
+    print("[DEBUG] rosen_name:", train.get("rosen_name", ""))
+    ...
+    line, dirn = infer_line_and_direction(train)
 # === 列番照合関数 ===
 def find_train_number(station, timestamp, delay_sec, line, dirn):
     ts = datetime.strptime(timestamp, "%Y-%m-%d %H:%M")
