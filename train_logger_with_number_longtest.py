@@ -127,10 +127,7 @@ timetable = []
 for path, line_type, direction in files:
     if path.exists():
         timetable.extend(load_timetable(path, line_type, direction))
-for train in sorted_trains:
-    print("[DEBUG] rosen_name:", train.get("rosen_name", ""))
-    ...
-    line, dirn = infer_line_and_direction(train)
+
 # === 列番照合関数 ===
 def find_train_number(station, timestamp, delay_sec, line, dirn):
     ts = datetime.strptime(timestamp, "%Y-%m-%d %H:%M")
@@ -193,29 +190,32 @@ for run in range(max_runs):
             sorted_trains = trains
 
         with open(csv_file, "a", newline="", encoding="utf-8-sig") as f:
-            writer = csv.writer(f)
-            for train in sorted_trains:
-                vid = train.get("vehicle_id")
-                formation = id_map.get(str(vid), f"ID:{vid}")
-                station = train.get("teiryujo_name", "")
-                if station.endswith("駅"):
-                    station = station[:-1]
+  　　　　  writer = csv.writer(f)
+  　　　　  for train in sorted_trains:
+      　　　　  # ← ここでrosen_nameを出力する
+      　　　　  print("[DEBUG] rosen_name:", train.get("rosen_name", ""))
+      　　　　  print("[DEBUG] keito_name:", train.get("keito_name", ""))  # ← 路線名はこっちの方が確実
 
-                timestamp = datetime.now(JST).strftime("%Y-%m-%d %H:%M")
-                line, dirn = infer_line_and_direction(train)
-                delay_sec = train.get("delay_sec", 0)
+      　　　　  vid = train.get("vehicle_id")
+      　　　　  formation = id_map.get(str(vid), f"ID:{vid}")
+      　　　　  station = train.get("teiryujo_name", "")
+      　　　　  if station.endswith("駅"):
+      　　　　      station = station[:-1]
 
-                # 時刻表と突き合わせて列車番号を特定
-                train_number = find_train_number(station, timestamp, delay_sec, line, dirn)
+      　　　　  timestamp = datetime.now(JST).strftime("%Y-%m-%d %H:%M")
+       　　　　 line, dirn = infer_line_and_direction(train)
+       　　　　 delay_sec = train.get("delay_sec", 0)
 
-                writer.writerow([
+   　　　　     train_number = find_train_number(station, timestamp, delay_sec, line, dirn)
+
+   　　　　     writer.writerow([
                     timestamp,
                     vid,
-                    formation,
-                    train_number,               # ← 列車番号を追加
-                    train.get("headsign", ""),
+       　　　　　    formation,
+        　　　　　   train_number,
+        　　　　　   train.get("headsign", ""),
                     station
-                ])
+               ])
 
     except Exception as e:
         print(f"[ERROR] API取得エラー: {e}")
