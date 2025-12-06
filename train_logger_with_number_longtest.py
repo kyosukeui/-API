@@ -43,63 +43,6 @@ print(f"記録開始(JST): {next_start}, 終了(JST): {end_of_day}")
 # sleep_seconds = (next_start - now_jst).total_seconds()
 # if sleep_seconds > 0:
 #     time.sleep(sleep_seconds)
-
-# === 記録ループ ===
-for run in range(max_runs):
-    now_jst = datetime.now(JST)
-    if now_jst >= end_of_day:
-        print("=== JST24時を過ぎたので終了 ===")
-        break
-    try:
-        response = requests.post(url, headers=headers, data=data, timeout=10)
-        response.raise_for_status()
-        trains = response.json()
-
-        # 並び替え（編成順）
-        try:
-            sorted_trains = sorted(
-                trains,
-                key=lambda t: formation_order.index(
-                    id_map.get(str(t.get("vehicle_id")), f"ID:{t.get('vehicle_id')}")
-                )
-                if id_map.get(str(t.get("vehicle_id"))) in formation_order else len(formation_order)
-            )
-        except Exception:
-            sorted_trains = trains
-
-        with open(csv_file, "a", newline="", encoding="utf-8-sig") as f:
-            writer = csv.writer(f)
-            for train in sorted_trains:
-                vid = train.get("vehicle_id")
-                formation = id_map.get(str(vid), f"ID:{vid}")
-                station = train.get("teiryujo_name", "")
-                if station.endswith("駅"):
-                    station = station[:-1]
-
-                timestamp = datetime.now(JST).strftime("%Y-%m-%d %H:%M")
-                line, dirn = infer_line_and_direction(train)
-                delay_sec = train.get("delay_sec", 0)
-
-                # 時刻表と突き合わせて列車番号を特定
-                train_number = find_train_number(station, timestamp, delay_sec, line, dirn)
-
-                writer.writerow([
-                    timestamp,
-                    vid,
-                    formation,
-                    train_number,               # ← 列車番号を追加
-                    train.get("headsign", ""),
-                    station
-                ])
-
-    except Exception as e:
-        print(f"[ERROR] API取得エラー: {e}")
-
-    if run < max_runs - 1:
-        time.sleep(interval_seconds)
-
-print("=== 保存完了 ===")
-
 # === 路線・方向判定（APIデータから） ===
 def infer_line_and_direction(train: dict):
     rosen = train.get("rosen_name", "")
@@ -222,6 +165,63 @@ last_train_numbers = {}
 
 # === 車両ごとの直前列番を保持 ===
 last_train_numbers = {}
+
+# === 記録ループ ===
+for run in range(max_runs):
+    now_jst = datetime.now(JST)
+    if now_jst >= end_of_day:
+        print("=== JST24時を過ぎたので終了 ===")
+        break
+    try:
+        response = requests.post(url, headers=headers, data=data, timeout=10)
+        response.raise_for_status()
+        trains = response.json()
+
+        # 並び替え（編成順）
+        try:
+            sorted_trains = sorted(
+                trains,
+                key=lambda t: formation_order.index(
+                    id_map.get(str(t.get("vehicle_id")), f"ID:{t.get('vehicle_id')}")
+                )
+                if id_map.get(str(t.get("vehicle_id"))) in formation_order else len(formation_order)
+            )
+        except Exception:
+            sorted_trains = trains
+
+        with open(csv_file, "a", newline="", encoding="utf-8-sig") as f:
+            writer = csv.writer(f)
+            for train in sorted_trains:
+                vid = train.get("vehicle_id")
+                formation = id_map.get(str(vid), f"ID:{vid}")
+                station = train.get("teiryujo_name", "")
+                if station.endswith("駅"):
+                    station = station[:-1]
+
+                timestamp = datetime.now(JST).strftime("%Y-%m-%d %H:%M")
+                line, dirn = infer_line_and_direction(train)
+                delay_sec = train.get("delay_sec", 0)
+
+                # 時刻表と突き合わせて列車番号を特定
+                train_number = find_train_number(station, timestamp, delay_sec, line, dirn)
+
+                writer.writerow([
+                    timestamp,
+                    vid,
+                    formation,
+                    train_number,               # ← 列車番号を追加
+                    train.get("headsign", ""),
+                    station
+                ])
+
+    except Exception as e:
+        print(f"[ERROR] API取得エラー: {e}")
+
+    if run < max_runs - 1:
+        time.sleep(interval_seconds)
+
+print("=== 保存完了 ===")
+
 
 
 print("[DEBUG] APIレスポンス:", trains)
