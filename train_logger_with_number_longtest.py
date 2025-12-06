@@ -128,16 +128,19 @@ def load_timetable(path, line_type, direction):
     timetable = []
     if line_type == "honsen":  # 駅が行方向
         for _, row in df.iterrows():
-            station = row[df.columns[0]]
+            station = str(row[df.columns[0]]).rstrip("駅")
             for col in df.columns[1:]:
                 val = row[col]
                 if pd.notna(val) and val not in ["レ", "(止)"]:
+                    val = str(val)
+                    if len(val) >= 5:
+                        val = val[:5]  # HH:MM に統一
                     timetable.append({
                         "line": line_type,
                         "direction": direction,
                         "train_number": str(col),
                         "station": station,
-                        "time": str(val)
+                        "time": val
                     })
     else:  # fuzikoshikamitaki, tateyama
         for _, row in df.iterrows():
@@ -145,12 +148,15 @@ def load_timetable(path, line_type, direction):
             for station in df.columns[1:]:
                 val = row[station]
                 if pd.notna(val) and val not in ["レ", "(止)"]:
+                    val = str(val)
+                    if len(val) >= 5:
+                        val = val[:5]
                     timetable.append({
                         "line": line_type,
                         "direction": direction,
                         "train_number": str(train_number),
-                        "station": station,
-                        "time": str(val)
+                        "station": str(station).rstrip("駅"),
+                        "time": val
                     })
     return timetable
 
@@ -181,18 +187,15 @@ for path, line_type, direction in files:
 
 # === 列番照合関数 ===
 def find_train_number(station, timestamp, delay_sec, line, dirn):
-    ts = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
+    ts = datetime.strptime(timestamp, "%Y-%m-%d %H:%M")
     ts_adjusted = ts - timedelta(seconds=int(delay_sec or 0))
 
-    # 方向一致を追加
     candidate_rows = [
         row for row in timetable
         if (line is None or row["line"] == line)
            and (dirn is None or row["direction"] == dirn)
            and row["station"] == station
     ]
-
-    print(f"[DEBUG] API方向={dirn}, CSV方向候補={[row['direction'] for row in candidate_rows]}")
 
     best_match = None
     min_diff = 999999
@@ -210,9 +213,8 @@ def find_train_number(station, timestamp, delay_sec, line, dirn):
 
     if best_match and min_diff <= 900:  # ±15分以内なら採用
         return best_match
- 
-    print(f"[DEBUG] 候補={len(candidate_rows)} 最小差分={min_diff}秒 駅={station}, 路線={line}, 方向={dirn}")
-    return "合致なし"   # ← 空文字ではなく「合致なし」
+
+    return "合致なし"
 
 
 # === 車両ごとの直前列番を保持 ===
