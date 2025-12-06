@@ -20,7 +20,7 @@ JST = timezone(timedelta(hours=9))
 os.makedirs("csv", exist_ok=True)
 
 date_str = datetime.now(JST).strftime("%Y-%m-%d_%H-%M")
-csv_file = f"csv/train_log_{date_str}.csv"
+csv_file = f"csv/train_log_with_number_{date_str}.csv"
 
 with open(csv_file, "w", newline="", encoding="utf-8-sig") as f:
     writer = csv.writer(f)
