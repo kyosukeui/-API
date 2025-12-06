@@ -213,8 +213,7 @@ def find_train_number(station, timestamp, delay_sec, line, dirn):
  
 print(f"[DEBUG] 候補={len(candidate_rows)} 最小差分={min_diff}秒 駅={station}, 路線={line}, 方向={dirn}")
 return "合致なし"   # ← 空文字ではなく「合致なし」
-    print(f"[DEBUG] 候補={len(candidate_rows)} 最小差分={min_diff}秒 駅={station}, 路線={line}, 方向={dirn}")
-    return ""
+
 
 # === 車両ごとの直前列番を保持 ===
 last_train_numbers = {}
