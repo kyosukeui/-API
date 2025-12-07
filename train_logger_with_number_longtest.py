@@ -56,7 +56,7 @@ def infer_line_and_direction(train: dict):
         line = None
         print(f"[DEBUG] 路線判定失敗: keito_name='{keito}'")
 
-    # rosen_nameやkeito_rosen_nameから方向を判定
+    # rosen_nameやkeito_rosen_nameから方向を判別
     rosen_info = train.get("rosen_name", "") + train.get("keito_rosen_name", "")
     if "上り" in rosen_info:
         direction = "up"
