@@ -46,26 +46,25 @@ print(f"記録開始(JST): {next_start}, 終了(JST): {end_of_day}")
 # === 路線・方向判定（APIデータから） ===
 def infer_line_and_direction(train: dict):
     keito = train.get("keito_name", "").strip()
-
-    # 完全一致で判定する
-    if keito == "本線":
+    if "本線" in keito:
         line = "honsen"
-    elif keito == "立山線":
+    elif "立山線" in keito:
         line = "tateyama"
-    elif keito in ["不二越・上滝線", "不二越上滝線"]:
+    elif "不二越" in keito or "上滝" in keito or "不二越・上滝" in keito:
         line = "fuzikoshikamitaki"
     else:
         line = None
-        print(f"[DEBUG] 路線判定失敗: keito_name='{keito}' rosen_name='{train.get('rosen_name','')}'")
+        print(f"[DEBUG] 路線判定失敗: keito_name='{keito}'")
 
-    dir_flag = train.get("direction") or train.get("updown")
-    if str(dir_flag) == "0":
+    # rosen_nameやkeito_rosen_nameから方向を判定
+    rosen_info = train.get("rosen_name", "") + train.get("keito_rosen_name", "")
+    if "上り" in rosen_info:
         direction = "up"
-    elif str(dir_flag) == "1":
+    elif "下り" in rosen_info:
         direction = "down"
     else:
         direction = None
-        print(f"[DEBUG] 方向判定失敗: dir_flag='{dir_flag}'")
+        print(f"[DEBUG] 方向判定失敗: rosen_name='{train.get('rosen_name','')}', keito_rosen_name='{train.get('keito_rosen_name','')}'")
 
     return line, direction
 
