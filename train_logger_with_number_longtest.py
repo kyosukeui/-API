@@ -46,10 +46,10 @@ print(f"記録開始(JST): {next_start}, 終了(JST): {end_of_day}")
 # === 路線・方向判定（APIデータから） ===
 def infer_line_and_direction(train: dict):
     keito = train.get("keito_name", "").strip()
-    if "本線" in keito:
-        line = "honsen"
-    elif "立山線" in keito:
+    if "立山線" in keito:
         line = "tateyama"
+    elif "本線" in keito:
+        line = "honsen"
     elif "不二越" in keito or "上滝" in keito or "不二越・上滝" in keito:
         line = "fuzikoshikamitaki"
     else:
