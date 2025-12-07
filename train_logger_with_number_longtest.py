@@ -72,39 +72,29 @@ def infer_line_and_direction(train: dict):
 def load_timetable(path, line_type, direction):
     df = pd.read_csv(path)
     timetable = []
-    if line_type == "honsen":  # 駅が行方向
-        for _, row in df.iterrows():
-            station = str(row[df.columns[0]]).rstrip("駅")
-            for col in df.columns[1:]:
-                val = row[col]
-                if pd.notna(val) and val not in ["レ", "(止)"]:
-                    val = str(val)
-                    if len(val) >= 5:
-                        val = val[:5]  # HH:MM に統一
-                    timetable.append({
-                        "line": line_type,
-                        "direction": direction,
-                        "train_number": str(col),
-                        "station": station,
-                        "time": val
-                    })
-    else:  # fuzikoshikamitaki, tateyama
-        for _, row in df.iterrows():
-            train_number = row[df.columns[0]]
-            for station in df.columns[1:]:
-                val = row[station]
-                if pd.notna(val) and val not in ["レ", "(止)"]:
-                    val = str(val)
-                    if len(val) >= 5:
-                        val = val[:5]
-                    timetable.append({
-                        "line": line_type,
-                        "direction": direction,
-                        "train_number": str(train_number),
-                        "station": str(station).rstrip("駅"),
-                        "time": val
-                    })
+
+    # すべて本線仕様で処理（駅が行、列番が列）
+    for _, row in df.iterrows():
+        # 1列目が駅名
+        station = str(row[df.columns[0]]).replace("駅", "").strip()
+        # 2列目以降が列車番号
+        for col in df.columns[1:]:
+            val = row[col]
+            if pd.notna(val) and val not in ["レ", "(止)"]:
+                val = str(val)
+                if len(val) >= 5:
+                    val = val[:5]  # HH:MM に統一
+                timetable.append({
+                    "line": line_type,
+                    "direction": direction,
+                    "train_number": str(col),
+                    "station": station,
+                    "time": val
+                })
+
     return timetable
+
+
 
 # === 休日判定 ===
 today = datetime.now(JST)
