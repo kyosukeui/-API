@@ -50,7 +50,7 @@ def infer_line_and_direction(train: dict):
         line = "tateyama"
     elif "本線" in keito:
         line = "honsen"
-    elif "不二越" in keito or "上滝" in keito or "不二越・上滝" in keito:
+    elif "不二越・上滝線" in keito:
         line = "fuzikoshikamitaki"
     else:
         line = None
