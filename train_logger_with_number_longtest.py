@@ -201,7 +201,7 @@ for run in range(max_runs):
 
                 vid = train.get("vehicle_id")
                 formation = id_map.get(str(vid), f"ID:{vid}")
-                station = train.get("teiryujo_name", "")
+                station = train.get("teiryujo_name", "").replace("駅", "").strip()
                 if station.endswith("駅"):
                     station = station[:-1]
 
