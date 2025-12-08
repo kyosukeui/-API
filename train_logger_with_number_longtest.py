@@ -27,7 +27,7 @@ with open(csv_file, "w", newline="", encoding="utf-8-sig") as f:
     writer.writerow(["timestamp", "vehicle_id", "formation_name", "train_number", "headsign", "station"])
 
 # === 記録設定 ===
-interval_minutes =20   # 20分間隔
+interval_seconds =20*60   # 20分間隔
 max_runs = 18            # 18回繰り返し
 
 # JST基準の開始時刻（即時開始に変更）
