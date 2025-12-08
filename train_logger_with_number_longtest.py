@@ -152,12 +152,8 @@ def find_train_number(station, timestamp, delay_sec, line, dirn):
 
     return "合致なし"
 
-
-# === 車両ごとの直前列番を保持 ===
-last_train_numbers = {}
-
-# === 車両ごとの直前列番を保持 ===
-last_train_numbers = {}
+# === 車両ごとの直前headsignを保持 ===
+last_headsigns = {}
 
 # === 記録ループ ===
 for run in range(max_runs):
@@ -185,9 +181,8 @@ for run in range(max_runs):
         with open(csv_file, "a", newline="", encoding="utf-8-sig") as f:
             writer = csv.writer(f)
             for train in sorted_trains:
-                # ← ここでrosen_nameを出力する
                 print("[DEBUG] rosen_name:", train.get("rosen_name", ""))
-                print("[DEBUG] keito_name:", train.get("keito_name", ""))  # ← 路線名はこっちの方が確実
+                print("[DEBUG] keito_name:", train.get("keito_name", ""))
 
                 vid = train.get("vehicle_id")
                 formation = id_map.get(str(vid), f"ID:{vid}")
@@ -200,15 +195,25 @@ for run in range(max_runs):
                 delay_sec = train.get("delay_sec", 0)
 
                 train_number = find_train_number(station, timestamp, delay_sec, line, dirn)
+                headsign = train.get("headsign", "")
 
+                # === 前回と同じheadsignならスキップ ===
+                if last_headsigns.get(vid) == headsign:
+                    print(f"[SKIP] {vid} の headsign が前回と同じ ({headsign}) のためスキップ")
+                    continue
+
+                # 書き込み
                 writer.writerow([
                     timestamp,
                     vid,
                     formation,
-                    train.get("headsign", ""),
-                    station,
-                    train_number
+                    train_number,
+                    headsign,
+                    station
                 ])
+
+                # 更新
+                last_headsigns[vid] = headsign
 
     except Exception as e:
         print(f"[ERROR] API取得エラー: {e}")
@@ -217,7 +222,6 @@ for run in range(max_runs):
         time.sleep(interval_seconds)
 
 print("=== 保存完了 ===")
-
 
 
 print("[DEBUG] APIレスポンス:", trains)
