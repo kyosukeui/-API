@@ -1,0 +1,28 @@
+name: Train Logger with Number
+
+on:
+  workflow_dispatch: 
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run script
+        run: python train_logger_with_number.py   # ← 6x4の構成に
+
+      - name: Upload CSV artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: train-log-with-number
+          path: csv/train_log_with_number_*.csv            # ← Python側の出力名に合わせる
