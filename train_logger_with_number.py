@@ -1,7 +1,6 @@
 import requests, time, csv, os
 from datetime import datetime, timedelta, timezone
-from pathlib import Path   # ← これを忘れずに！
-
+from pathlib import Path
 import pandas as pd
 
 url = "https://buscatch.jp/rt3/unko_map_simple.ajax.php"
@@ -21,14 +20,15 @@ JST = timezone(timedelta(hours=9))
 os.makedirs("csv", exist_ok=True)
 
 date_str = datetime.now(JST).strftime("%Y-%m-%d_%H-%M")
-csv_file = f"csv/train_log_{date_str}.csv"
+csv_file = f"csv/train_log_with_number_{date_str}.csv"
 
 with open(csv_file, "w", newline="", encoding="utf-8-sig") as f:
     writer = csv.writer(f)
-    writer.writerow(["timestamp", "vehicle_id", "formation_name", "headsign", "station"])
+    writer.writerow(["timestamp", "vehicle_id", "formation_name", "train_number", "headsign", "station"])
 
-interval_minutes = 20
-max_runs = 18
+# === 記録設定 ===
+interval_minutes = 20   # 20分間隔
+max_runs = 18           # 18回繰り返し
 
 # === 開始時刻リスト（JST基準） ===
 start_hours = [3, 9, 15, 21]
@@ -51,49 +51,17 @@ for st in start_times:
 
 if next_start is None:
     print(f"[{now}] 本日の開始時刻はすべて過ぎました。終了します。")
-else:
-    # 開始まで待機
-    sleep_seconds = (next_start - now).total_seconds()
-    if sleep_seconds > 0:
-        print(f"[{now}] {next_start} まで {sleep_seconds:.0f} 秒待機します")
-        time.sleep(sleep_seconds)
+    exit()
 
-    # === 記録ループ ===
-    for run in range(max_runs):
-        now = datetime.now(JST)
-        # 24時を過ぎたら終了
-        if now.hour == 0 and now.date() != today:
-            print(f"[{now}] JST24時を過ぎたため終了します")
-            break
+# 当日の終了時刻（JST24時）
+end_of_day = datetime(today.year, today.month, today.day, 23, 59, 59, tzinfo=JST)
 
-        try:
-            response = requests.post(url, headers=headers, data=data, timeout=10)
-            response.raise_for_status()
-            trains = response.json()
-        except Exception as e:
-            print(f"[{now}] エラー発生: {e}")
-        else:
-            sorted_trains = sorted(
-                trains,
-                key=lambda t: formation_order.index(id_map.get(str(t.get("vehicle_id")), f"ID:{t.get('vehicle_id')}"))
-                if id_map.get(str(t.get("vehicle_id"))) in formation_order else len(formation_order)
-            )
-            with open(csv_file, "a", newline="", encoding="utf-8-sig") as f:
-                writer = csv.writer(f)
-                for train in sorted_trains:
-                    vid = train.get("vehicle_id")
-                    formation = id_map.get(str(vid), f"ID:{vid}")
-                    writer.writerow([
-                        now.strftime("%Y-%m-%d %H:%M:%S"),
-                        vid,
-                        formation,
-                        train.get("headsign"),
-                        train.get("teiryujo_name")
-                    ])
-            print(f"[{now}] データを保存しました ({len(sorted_trains)}件)")
+# 開始まで待機
+sleep_seconds = (next_start - now).total_seconds()
+if sleep_seconds > 0:
+    print(f"[{now}] {next_start} まで {sleep_seconds:.0f} 秒待機します")
+    time.sleep(sleep_seconds)
 
-        if run < max_runs - 1:
-            time.sleep(interval_minutes * 60)
 # === 路線・方向判定（APIデータから） ===
 def infer_line_and_direction(train: dict):
     keito = train.get("keito_name", "").strip()
@@ -203,7 +171,6 @@ def find_train_number(station, timestamp, delay_sec, line, dirn):
 
     return "合致なし"
 
-
 # === 車両ごとの直前headsignを保持 ===
 last_headsigns = {}
 
@@ -274,7 +241,6 @@ for run in range(max_runs):
         time.sleep(interval_seconds)
 
 print("=== 保存完了 ===")
-
 
 
 print("[DEBUG] APIレスポンス:", trains)
