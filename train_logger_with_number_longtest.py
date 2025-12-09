@@ -190,6 +190,9 @@ for run in range(max_runs):
                 if station.endswith("駅"):
                     station = station[:-1]
 
+                if not station:
+                    print(f"[DEBUG] vehicle_id={vid} の station が None: train={train}")
+                    
                 timestamp = datetime.now(JST).strftime("%Y-%m-%d %H:%M")
                 line, dirn = infer_line_and_direction(train)
                 delay_sec = train.get("delay_sec", 0)
