@@ -150,7 +150,7 @@ try:
                 for train in sorted_trains:
                     vid = train.get("vehicle_id")
                     formation = id_map.get(str(vid), f"ID:{vid}")
-                    station = train.get("teiryujo_name", "").replace("駅", "").strip()
+                    station = str(train.get("teiryujo_name") or "").replace("駅", "").strip()
                     timestamp = datetime.now(JST).strftime("%Y-%m-%d %H:%M")
                     line, dirn = infer_line_and_direction(train)
                     delay_sec = train.get("delay_sec", 0)
