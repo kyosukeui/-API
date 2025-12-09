@@ -9,12 +9,13 @@ headers = {"User-Agent": "Mozilla/5.0", "X-Requested-With": "XMLHttpRequest"}
 
 id_map = {
     "5747": "10041F",
+    "5758": "17483F",
     "5760": "17485F",
     "6013": "14773F",
     "5902": "あお",
     "5883": "17481F"
 }
-formation_order = ["10041F", "14773F", "17481F", "17485F", "あお"]
+formation_order = ["10041F", "14773F", "17481F","17483F" ,"17485F", "あお"]
 
 JST = timezone(timedelta(hours=9))
 os.makedirs("csv", exist_ok=True)
