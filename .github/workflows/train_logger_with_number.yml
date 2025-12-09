@@ -1,4 +1,4 @@
-name: Train Logger (Production)
+name: Train Logger number test
 
 on:
   workflow_dispatch:   # 手動実行も可能
