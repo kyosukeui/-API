@@ -1,0 +1,32 @@
+name: Train Logger (Production)
+
+on:
+  workflow_dispatch:   # 手動実行も可能
+  schedule:
+    - cron: "0 18 * * *"   # JST 3時
+    - cron: "0 0 * * *"    # JST 9時
+    - cron: "0 6 * * *"    # JST 15時
+    - cron: "0 12 * * *"   # JST 21時
+
+jobs:
+  run-logger:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run train logger
+        run: python train_logger_with_number.py
+
+      - name: Upload CSV logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: train-log-csv
+          path: csv/train_log_*.csv
