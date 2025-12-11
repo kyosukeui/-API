@@ -3,10 +3,10 @@ name: Train Logger number test
 on:
   workflow_dispatch:   # 手動実行も可能
   schedule:
-    - cron: "0 18 * * *"   # JST 3時
+    - cron: "0 19 * * *"   # JST 4時
     - cron: "0 0 * * *"    # JST 9時
-    - cron: "0 6 * * *"    # JST 15時
-    - cron: "0 12 * * *"   # JST 21時
+    - cron: "0 5 * * *"    # JST 14時
+    - cron: "0 10 * * *"   # JST 19時
 
 jobs:
   run-logger:
