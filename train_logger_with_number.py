@@ -23,10 +23,9 @@ id_map = {
     "5884": "17485F",
     "5760": "17487F",
     "6013": "14773F",
-    "5902": "14767青F",
+    "5902": "14767F青",
     
 }
-formation_order = ["10033F","10041F", "14773F","16011F", "17481F","17483F" ,"17485F", "あお"]
 
 JST = timezone(timedelta(hours=9))
 os.makedirs("csv", exist_ok=True)
