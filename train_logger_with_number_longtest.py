@@ -8,13 +8,27 @@ data = {"id": "chitetsu_train", "command": "get_unko_list", "rosen_group_id": "2
 headers = {"User-Agent": "Mozilla/5.0", "X-Requested-With": "XMLHttpRequest"}
 
 id_map = {
+    "5741": "16011F",
+    "5742": "16013F?",
+    "5743": "10031F",
+    "5744": "10033F?",
+    "5746": "10039F",
     "5747": "10041F",
-    "5760": "17485F",
+    "5748": "10043F",
+    "5749": "10045F?",
+    "5754": "14769F赤?",
+    "5755": "14771F?",
+    "5883": "17481F",
+    "5758": "17483F",
+    "5884": "17485F",
+    "5760": "17487F",
     "6013": "14773F",
-    "5902": "あお",
-    "5883": "17481F"
+    "5902": "14767F青",
+    
 }
-formation_order = ["10041F", "14773F", "17481F", "17485F", "あお"]
+
+formation_order = ["1001", "1002", "1003", "1004"]
+
 
 JST = timezone(timedelta(hours=9))
 os.makedirs("csv", exist_ok=True)
