@@ -39,7 +39,7 @@ csv_file = f"csv/train_log_{date_str}.csv"
 
 with open(csv_file, "w", newline="", encoding="utf-8-sig") as f:
     writer = csv.writer(f)
-    writer.writerow(["timestamp", "vehicle_id", "formation_name", "train_number", "headsign", "station"])
+    writer.writerow(["timestamp", "vehicle_id", "formation_name", "headsign", "station", "train_number"])
 
 interval_minutes = 20
 max_runs = 18
