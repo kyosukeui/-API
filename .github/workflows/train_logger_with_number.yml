@@ -4,7 +4,7 @@ on:
   workflow_dispatch:   # 手動実行も可能
   schedule:
     - cron: "0 19 * * *"   # JST 4時
-    - cron: "0 23 * * *"    # JST 9時
+    - cron: "0 23 * * *"    # JST 8時
     - cron: "0 5 * * *"    # JST 14時
     - cron: "0 10 * * *"   # JST 19時
 
