@@ -25,4 +25,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: train-log-with-number
-          path: csv/train_log_with_number_*.csv            # ← Python側の出力名に合わせる
+          path: csv/train_log_*.csv         # ← Python側の出力名に合わせる
