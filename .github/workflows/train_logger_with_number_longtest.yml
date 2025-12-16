@@ -19,7 +19,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run script
-        run: python train_logger_with_number_longtest.py   # ← 修正済み
+        run: python ./train_logger_with_number_longtest.py   # ← 修正済み
 
       - name: Upload CSV artifact
         uses: actions/upload-artifact@v4
