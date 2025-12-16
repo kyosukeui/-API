@@ -27,9 +27,6 @@ id_map = {
     
 }
 
-formation_order = ["1001", "1002", "1003", "1004"]
-
-
 
 JST = timezone(timedelta(hours=9))
 os.makedirs("csv", exist_ok=True)
@@ -39,8 +36,7 @@ csv_file = f"csv/train_log_{date_str}.csv"
 
 with open(csv_file, "w", newline="", encoding="utf-8-sig") as f:
     writer = csv.writer(f)
-    writer.writerow(["timestamp", "vehicle_id", "formation_name", "headsign", "station", "train_number"])
-
+    writer.writerow(["timestamp", "vehicle_id", "formation_name", "headsign", "station", "train_number", "timetable_file"])
 interval_minutes = 20
 max_runs = 18
 start_date = datetime.now(JST).date()
@@ -62,7 +58,8 @@ def load_timetable(path, line_type, direction):
                     "direction": direction,
                     "train_number": str(col),
                     "station": station,
-                    "time": val
+                    "time": val,
+                    "source_file": path.name   # ←追加
                 })
     return timetable
 
@@ -98,6 +95,7 @@ def find_train_number(station, timestamp, delay_sec, line, dirn, timetable):
     ]
     best_match = None
     min_diff = 999999
+    source_file = None
     for row in candidate_rows:
         try:
             tt = datetime.strptime(row["time"], "%H:%M").replace(
@@ -107,11 +105,12 @@ def find_train_number(station, timestamp, delay_sec, line, dirn, timetable):
             if diff < min_diff:
                 min_diff = diff
                 best_match = row["train_number"]
+                source_file = row["source_file"]
         except ValueError:
             continue
     if best_match and min_diff <= 900:  # ±15分以内なら採用
-        return best_match
-    return "合致なし"
+        return best_match, source_file
+    return "合致なし", None
 
 # === 時刻表ファイル読み込み ===
 year = "2025W"
@@ -131,12 +130,14 @@ files = [
     (base_dir / f"timetable2025W_tateyama_up_{suffix}.csv",   "tateyama", "up"),
 ]
 timetable = []
+used_files = []
 for path, line_type, direction in files:
     if path.exists():
         timetable.extend(load_timetable(path, line_type, direction))
-
-# === 車両ごとの直前headsignを保持 ===
-last_headsigns = {}
+        used_files.append(path.name)   # ファイル名だけ記録
+# === 車両ごとの直前記録を保持 ===
+# vehicle_id → (headsign, train_number)
+last_records = {}
 
 try:
     for run in range(max_runs):
@@ -152,11 +153,8 @@ try:
         except Exception as e:
             print(f"[{now}] エラー発生: {e}")
         else:
-            sorted_trains = sorted(
-                trains,
-                key=lambda t: formation_order.index(id_map.get(str(t.get("vehicle_id")), f"ID:{t.get('vehicle_id')}"))
-                if id_map.get(str(t.get("vehicle_id"))) in formation_order else len(formation_order)
-            )
+            sorted_trains = trains  # 並び替え不要ならそのまま
+
             with open(csv_file, "a", newline="", encoding="utf-8-sig") as f:
                 writer = csv.writer(f)
                 for train in sorted_trains:
@@ -166,23 +164,31 @@ try:
                     timestamp = datetime.now(JST).strftime("%Y-%m-%d %H:%M")
                     line, dirn = infer_line_and_direction(train)
                     delay_sec = train.get("delay_sec", 0)
-                    train_number = find_train_number(station, timestamp, delay_sec, line, dirn, timetable)
+                    train_number, timetable_file = find_train_number(
+                        station, timestamp, delay_sec, line, dirn, timetable
+                    )
                     headsign = train.get("headsign", "")
 
-                    # === 前回と同じheadsignならスキップ ===
-                    if last_headsigns.get(vid) == headsign:
-                        print(f"[SKIP] {vid} の headsign が前回と同じ ({headsign}) のためスキップ")
+                    # === スキップ判定 ===
+                    prev = last_records.get(vid)
+                    if prev and prev[0] == headsign and prev[1] != "合致なし":
+                        print(f"[SKIP] {vid} の headsign が前回と同じ ({headsign}) "
+                              f"かつ列番合致ありのためスキップ")
                         continue
 
+                    # === CSV書き込み ===
                     writer.writerow([
                         timestamp,
                         vid,
                         formation,
-                        train_number,
                         headsign,
-                        station
+                        station,
+                        train_number,
+                        timetable_file or "未使用"
                     ])
-                    last_headsigns[vid] = headsign
+
+                    # === 記録更新 ===
+                    last_records[vid] = (headsign, train_number)
 
             print(f"[{now}] データを保存しました ({len(sorted_trains)}件)")
 
