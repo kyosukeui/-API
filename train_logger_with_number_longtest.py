@@ -58,7 +58,8 @@ def load_timetable(path, line_type, direction):
                     "direction": direction,
                     "train_number": str(col),
                     "station": station,
-                    "time": val
+                    "time": val,
+                    "source_file": path.name   # ←追加
                 })
     return timetable
 
@@ -94,6 +95,7 @@ def find_train_number(station, timestamp, delay_sec, line, dirn, timetable):
     ]
     best_match = None
     min_diff = 999999
+    source_file = None
     for row in candidate_rows:
         try:
             tt = datetime.strptime(row["time"], "%H:%M").replace(
@@ -103,11 +105,12 @@ def find_train_number(station, timestamp, delay_sec, line, dirn, timetable):
             if diff < min_diff:
                 min_diff = diff
                 best_match = row["train_number"]
+                source_file = row["source_file"]
         except ValueError:
             continue
     if best_match and min_diff <= 900:  # ±15分以内なら採用
-        return best_match
-    return "合致なし"
+        return best_match, source_file
+    return "合致なし", None
 
 # === 時刻表ファイル読み込み ===
 year = "2025W"
@@ -168,6 +171,8 @@ try:
                         print(f"[SKIP] {vid} の headsign が前回と同じ ({headsign}) かつ列番合致ありのためスキップ")
                         continue
 
+                    train_number, timetable_file = find_train_number(station, timestamp, delay_sec, line, dirn, timetable)
+
                     writer.writerow([
                         timestamp,
                         vid,
@@ -175,9 +180,8 @@ try:
                         headsign,
                         station,
                         train_number,
-                        ",".join(used_files)
+                        timetable_file or "未使用"
                     ])
-                    last_headsigns[vid] = headsign
 
             print(f"[{now}] データを保存しました ({len(sorted_trains)}件)")
 
