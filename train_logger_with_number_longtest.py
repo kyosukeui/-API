@@ -36,8 +36,7 @@ csv_file = f"csv/train_log_{date_str}.csv"
 
 with open(csv_file, "w", newline="", encoding="utf-8-sig") as f:
     writer = csv.writer(f)
-    writer.writerow(["timestamp", "vehicle_id", "formation_name", "headsign", "station", "train_number"])
-
+    writer.writerow(["timestamp", "vehicle_id", "formation_name", "headsign", "station", "train_number", "timetable_file"])
 interval_minutes = 0.5
 max_runs = 5
 start_date = datetime.now(JST).date()
@@ -128,10 +127,11 @@ files = [
     (base_dir / f"timetable2025W_tateyama_up_{suffix}.csv",   "tateyama", "up"),
 ]
 timetable = []
+used_files = []
 for path, line_type, direction in files:
     if path.exists():
         timetable.extend(load_timetable(path, line_type, direction))
-
+        used_files.append(path.name)   # ファイル名だけ記録
 # === 車両ごとの直前headsignを保持 ===
 last_headsigns = {}
 
@@ -164,8 +164,8 @@ try:
                     headsign = train.get("headsign", "")
 
                     # === 前回と同じheadsignならスキップ ===
-                    if last_headsigns.get(vid) == headsign:
-                        print(f"[SKIP] {vid} の headsign が前回と同じ ({headsign}) のためスキップ")
+                    if last_headsigns.get(vid) == headsign and train_number != "合致なし":
+                        print(f"[SKIP] {vid} の headsign が前回と同じ ({headsign}) かつ列番合致ありのためスキップ")
                         continue
 
                     writer.writerow([
@@ -174,7 +174,8 @@ try:
                         formation,
                         headsign,
                         station,
-                        train_number
+                        train_number,
+                        ",".join(used_files)
                     ])
                     last_headsigns[vid] = headsign
 
