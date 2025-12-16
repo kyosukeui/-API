@@ -27,71 +27,27 @@ id_map = {
     
 }
 
-formation_order = ["1001", "1002", "1003", "1004"]
-
 
 JST = timezone(timedelta(hours=9))
 os.makedirs("csv", exist_ok=True)
 
 date_str = datetime.now(JST).strftime("%Y-%m-%d_%H-%M")
-csv_file = f"csv/train_log_with_number_{date_str}.csv"
+csv_file = f"csv/train_log_{date_str}.csv"
 
 with open(csv_file, "w", newline="", encoding="utf-8-sig") as f:
     writer = csv.writer(f)
-    writer.writerow(["timestamp", "vehicle_id", "formation_name", "train_number", "headsign", "station"])
+    writer.writerow(["timestamp", "vehicle_id", "formation_name", "headsign", "station", "train_number"])
 
-# === 記録設定 ===
-interval_seconds =20  # 20分間隔
-max_runs = 6            # 18回繰り返し
-
-# JST基準の開始時刻（即時開始に変更）
-now_jst = datetime.now(JST)
-next_start = now_jst    # 即時開始
-
-# 当日の終了時刻（JST24時）
-end_of_day = now_jst.replace(hour=23, minute=59, second=59, microsecond=0)
-
-print(f"記録開始(JST): {next_start}, 終了(JST): {end_of_day}")
-
-# 開始まで待機（即時開始なので不要）
-# sleep_seconds = (next_start - now_jst).total_seconds()
-# if sleep_seconds > 0:
-#     time.sleep(sleep_seconds)
-# === 路線・方向判定（APIデータから） ===
-def infer_line_and_direction(train: dict):
-    keito = train.get("keito_name", "").strip()
-    if "立山線" in keito:
-        line = "tateyama"
-    elif "本線" in keito:
-        line = "honsen"
-    elif "不二越・上滝線" in keito:
-        line = "fuzikoshikamitaki"
-    else:
-        line = None
-        print(f"[DEBUG] 路線判定失敗: keito_name='{keito}'")
-
-    # rosen_nameやkeito_rosen_nameから方向を判別
-    rosen_info = train.get("rosen_name", "") + train.get("keito_rosen_name", "")
-    if "上り" in rosen_info:
-        direction = "up"
-    elif "下り" in rosen_info:
-        direction = "down"
-    else:
-        direction = None
-        print(f"[DEBUG] 方向判定失敗: rosen_name='{train.get('rosen_name','')}', keito_rosen_name='{train.get('keito_rosen_name','')}'")
-
-    return line, direction
+interval_minutes = 0.5
+max_runs = 5
+start_date = datetime.now(JST).date()
 
 # === 時刻表読み込み関数 ===
 def load_timetable(path, line_type, direction):
     df = pd.read_csv(path)
     timetable = []
-
-    # すべて本線仕様で処理（駅が行、列番が列）
     for _, row in df.iterrows():
-        # 1列目が駅名
         station = str(row[df.columns[0]]).replace("駅", "").strip()
-        # 2列目以降が列車番号
         for col in df.columns[1:]:
             val = row[col]
             if pd.notna(val) and val not in ["レ", "(止)"]:
@@ -105,48 +61,38 @@ def load_timetable(path, line_type, direction):
                     "station": station,
                     "time": val
                 })
-
     return timetable
 
-
-
-# === 休日判定 ===
-today = datetime.now(JST)
-weekday = today.weekday()
-is_holiday = (weekday >= 5) or (
-    (today.month == 12 and today.day >= 30) or (today.month == 1 and today.day <= 3)
-)
-suffix = "holiday" if is_holiday else "weekday"
-
-# === 時刻表ファイルリスト ===
-year = "2025W"
-base_dir = Path(f"data/{year}")
-files = [
-    (base_dir / f"timetable2025W_honsen_down_{suffix}.csv", "honsen", "down"),
-    (base_dir / f"timetable2025W_honsen_up_{suffix}.csv",   "honsen", "up"),
-    (base_dir / f"timetable2025W_fuzikoshikamitaki_down_{suffix}.csv", "fuzikoshikamitaki", "down"),
-    (base_dir / f"timetable2025W_fuzikoshikamitaki_up_{suffix}.csv",   "fuzikoshikamitaki", "up"),
-    (base_dir / f"timetable2025W_tateyama_down_{suffix}.csv", "tateyama", "down"),
-    (base_dir / f"timetable2025W_tateyama_up_{suffix}.csv",   "tateyama", "up"),
-]
-
-timetable = []
-for path, line_type, direction in files:
-    if path.exists():
-        timetable.extend(load_timetable(path, line_type, direction))
+# === 路線・方向判定 ===
+def infer_line_and_direction(train: dict):
+    keito = train.get("keito_name", "").strip()
+    if "立山線" in keito:
+        line = "tateyama"
+    elif "本線" in keito:
+        line = "honsen"
+    elif "不二越・上滝線" in keito:
+        line = "fuzikoshikamitaki"
+    else:
+        line = None
+    rosen_info = train.get("rosen_name", "") + train.get("keito_rosen_name", "")
+    if "上り" in rosen_info:
+        direction = "up"
+    elif "下り" in rosen_info:
+        direction = "down"
+    else:
+        direction = None
+    return line, direction
 
 # === 列番照合関数 ===
-def find_train_number(station, timestamp, delay_sec, line, dirn):
+def find_train_number(station, timestamp, delay_sec, line, dirn, timetable):
     ts = datetime.strptime(timestamp, "%Y-%m-%d %H:%M")
     ts_adjusted = ts - timedelta(seconds=int(delay_sec or 0))
-
     candidate_rows = [
         row for row in timetable
         if (line is None or row["line"] == line)
            and (dirn is None or row["direction"] == dirn)
            and row["station"] == station
     ]
-
     best_match = None
     min_diff = 999999
     for row in candidate_rows:
@@ -160,86 +106,87 @@ def find_train_number(station, timestamp, delay_sec, line, dirn):
                 best_match = row["train_number"]
         except ValueError:
             continue
-
     if best_match and min_diff <= 900:  # ±15分以内なら採用
         return best_match
-
     return "合致なし"
+
+# === 時刻表ファイル読み込み ===
+year = "2025W"
+base_dir = Path(f"data/{year}")
+today = datetime.now(JST)
+weekday = today.weekday()
+is_holiday = (weekday >= 5) or (
+    (today.month == 12 and today.day >= 30) or (today.month == 1 and today.day <= 3)
+)
+suffix = "holiday" if is_holiday else "weekday"
+files = [
+    (base_dir / f"timetable2025W_honsen_down_{suffix}.csv", "honsen", "down"),
+    (base_dir / f"timetable2025W_honsen_up_{suffix}.csv",   "honsen", "up"),
+    (base_dir / f"timetable2025W_fuzikoshikamitaki_down_{suffix}.csv", "fuzikoshikamitaki", "down"),
+    (base_dir / f"timetable2025W_fuzikoshikamitaki_up_{suffix}.csv",   "fuzikoshikamitaki", "up"),
+    (base_dir / f"timetable2025W_tateyama_down_{suffix}.csv", "tateyama", "down"),
+    (base_dir / f"timetable2025W_tateyama_up_{suffix}.csv",   "tateyama", "up"),
+]
+timetable = []
+for path, line_type, direction in files:
+    if path.exists():
+        timetable.extend(load_timetable(path, line_type, direction))
 
 # === 車両ごとの直前headsignを保持 ===
 last_headsigns = {}
 
-# === 記録ループ ===
-for run in range(max_runs):
-    now_jst = datetime.now(JST)
-    if now_jst >= end_of_day:
-        print("=== JST24時を過ぎたので終了 ===")
-        break
-    try:
-        response = requests.post(url, headers=headers, data=data, timeout=10)
-        response.raise_for_status()
-        trains = response.json()
+try:
+    for run in range(max_runs):
+        now = datetime.now(JST)
+        if now.date() != start_date:
+            print(f"[{now}] 日付が変わったため終了します")
+            break
 
-        # 並び替え（編成順）
         try:
+            response = requests.post(url, headers=headers, data=data, timeout=10)
+            response.raise_for_status()
+            trains = response.json()
+        except Exception as e:
+            print(f"[{now}] エラー発生: {e}")
+        else:
             sorted_trains = sorted(
                 trains,
-                key=lambda t: formation_order.index(
-                    id_map.get(str(t.get("vehicle_id")), f"ID:{t.get('vehicle_id')}")
-                )
+                key=lambda t: formation_order.index(id_map.get(str(t.get("vehicle_id")), f"ID:{t.get('vehicle_id')}"))
                 if id_map.get(str(t.get("vehicle_id"))) in formation_order else len(formation_order)
             )
-        except Exception:
-            sorted_trains = trains
+            with open(csv_file, "a", newline="", encoding="utf-8-sig") as f:
+                writer = csv.writer(f)
+                for train in sorted_trains:
+                    vid = train.get("vehicle_id")
+                    formation = id_map.get(str(vid), f"ID:{vid}")
+                    station = str(train.get("teiryujo_name") or "").replace("駅", "").strip()
+                    timestamp = datetime.now(JST).strftime("%Y-%m-%d %H:%M")
+                    line, dirn = infer_line_and_direction(train)
+                    delay_sec = train.get("delay_sec", 0)
+                    train_number = find_train_number(station, timestamp, delay_sec, line, dirn, timetable)
+                    headsign = train.get("headsign", "")
 
-        with open(csv_file, "a", newline="", encoding="utf-8-sig") as f:
-            writer = csv.writer(f)
-            for train in sorted_trains:
-                print("[DEBUG] rosen_name:", train.get("rosen_name", ""))
-                print("[DEBUG] keito_name:", train.get("keito_name", ""))
+                    # === 前回と同じheadsignならスキップ ===
+                    if last_headsigns.get(vid) == headsign:
+                        print(f"[SKIP] {vid} の headsign が前回と同じ ({headsign}) のためスキップ")
+                        continue
 
-                vid = train.get("vehicle_id")
-                formation = id_map.get(str(vid), f"ID:{vid}")
-                station = train.get("teiryujo_name", "").replace("駅", "").strip()
-                if station.endswith("駅"):
-                    station = station[:-1]
+                    writer.writerow([
+                        timestamp,
+                        vid,
+                        formation,
+                        train_number,
+                        headsign,
+                        station
+                    ])
+                    last_headsigns[vid] = headsign
 
-                if not station:
-                    print(f"[DEBUG] vehicle_id={vid} の station が None: train={train}")
-                    
-                timestamp = datetime.now(JST).strftime("%Y-%m-%d %H:%M")
-                line, dirn = infer_line_and_direction(train)
-                delay_sec = train.get("delay_sec", 0)
+            print(f"[{now}] データを保存しました ({len(sorted_trains)}件)")
 
-                train_number = find_train_number(station, timestamp, delay_sec, line, dirn)
-                headsign = train.get("headsign", "")
+        if run < max_runs - 1:
+            time.sleep(interval_minutes * 60)
 
-                # === 前回と同じheadsignならスキップ ===
-                if last_headsigns.get(vid) == headsign:
-                    print(f"[SKIP] {vid} の headsign が前回と同じ ({headsign}) のためスキップ")
-                    continue
-
-                # 書き込み
-                writer.writerow([
-                    timestamp,
-                    vid,
-                    formation,
-                    train_number,
-                    headsign,
-                    station
-                ])
-
-                # 更新
-                last_headsigns[vid] = headsign
-
-    except Exception as e:
-        print(f"[ERROR] API取得エラー: {e}")
-
-    if run < max_runs - 1:
-        time.sleep(interval_seconds)
-
-print("=== 保存完了 ===")
-
-
-print("[DEBUG] APIレスポンス:", trains)
-print("[DEBUG] sorted_trains:", sorted_trains)
+except KeyboardInterrupt:
+    print("=== 手動終了が検出されました ===")
+finally:
+    print("=== 保存完了 ===")
