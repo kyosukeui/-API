@@ -1,6 +1,4 @@
-name: Train Logger number test
-
-on:
+name: Chitetsu train log 6h
   workflow_dispatch:   # 手動実行も可能
   schedule:
     - cron: "0 19 * * *"   # JST 4時
