@@ -1,4 +1,5 @@
 name: Chitetsu train log 6h
+on:
   workflow_dispatch:   # 手動実行も可能
   schedule:
     - cron: "0 19 * * *"   # JST 4時
