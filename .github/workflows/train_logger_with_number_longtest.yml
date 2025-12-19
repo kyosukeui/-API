@@ -1,4 +1,4 @@
-name: Train Logger with Number (Test)
+name: 地鉄API即時実行用(所要2分半)
 
 on:
   workflow_dispatch:   # 手動実行のみ（試験用）
