@@ -56,22 +56,33 @@ start_date = datetime.now(JST).date()
 def load_unyo_table(path):
     weekday_ops = {}
     holiday_ops = {}
+    current = None  # "weekday" or "holiday"
 
     with open(path, "r", encoding="utf-8") as f:
         for raw in f:
             line = raw.strip()
+            if not line:
+                continue
 
-            # 空行・コメント・区切りなし行はスキップ
-            if not line or "=" not in line:
+            # セクション切り替え
+            if line.lower() == "[weekday]":
+                current = "weekday"
+                continue
+            if line.lower() == "[holiday]":
+                current = "holiday"
+                continue
+
+            # セクション外 or 不正行は無視
+            if "=" not in line or current is None:
                 continue
 
             op, nums = line.split("=", 1)
             nums = [n.strip() for n in nums.split(",") if n.strip()]
 
-            if op.startswith("H"):
-                holiday_ops[op] = nums
-            else:
+            if current == "weekday":
                 weekday_ops[op] = nums
+            elif current == "holiday":
+                holiday_ops[op] = nums
 
     return weekday_ops, holiday_ops
 
