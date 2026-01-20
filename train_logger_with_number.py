@@ -37,11 +37,52 @@ csv_file = f"csv/train_log_{date_str}.csv"
 
 with open(csv_file, "w", newline="", encoding="utf-8-sig") as f:
     writer = csv.writer(f)
-    writer.writerow(["timestamp", "vehicle_id", "formation_name", "headsign", "station", "train_number", "timetable_file"])
+    writer.writerow(["timestamp", "vehicle_id", "formation_name", "headsign", "station", "train_number", "timetable_file","operation" ])
 interval_minutes = 20
 max_runs = 18
 start_date = datetime.now(JST).date()
 
+# === 運用表読み込み ===
+def load_unyo_table(path):
+    mode = None
+    weekday_ops = {}
+    holiday_ops = {}
+
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+
+            if line == "[weekday]":
+                mode = "weekday"
+                continue
+            elif line == "[holiday]":
+                mode = "holiday"
+                continue
+
+            if "=" in line and mode:
+                op, nums = line.split("=", 1)
+                nums = [n.strip() for n in nums.split(",")]
+
+                if mode == "weekday":
+                    weekday_ops[op] = nums
+                else:
+                    holiday_ops[op] = nums
+
+    return weekday_ops, holiday_ops
+
+# === 逆引き辞書 ===
+def build_reverse_map(op_table):
+    rev = {}
+    for op, nums in op_table.items():
+        for n in nums:
+            rev[n] = op
+    return rev
+# === 運用表読み込み ===
+weekday_ops, holiday_ops = load_unyo_table("2025Wunyo.txt")
+weekday_map = build_reverse_map(weekday_ops)
+holiday_map = build_reverse_map(holiday_ops)
 # === 時刻表読み込み関数 ===
 def load_timetable(path, line_type, direction):
     df = pd.read_csv(path)
@@ -139,7 +180,6 @@ for path, line_type, direction in files:
 # === 車両ごとの直前記録を保持 ===
 # vehicle_id → (headsign, train_number)
 last_records = {}
-
 try:
     for run in range(max_runs):
         now = datetime.now(JST)
@@ -176,7 +216,11 @@ try:
                         print(f"[SKIP] {vid} の headsign が前回と同じ ({headsign}) "
                               f"かつ列番合致ありのためスキップ")
                         continue
-
+                        
+                    # 平日 or 休日で切り替え
+                    op_map = weekday_map if suffix == "weekday" else holiday_map
+                    operation = op_map.get(str(train_number), "不明")
+                    
                     # === CSV書き込み ===
                     writer.writerow([
                         timestamp,
@@ -185,7 +229,8 @@ try:
                         headsign,
                         station,
                         train_number,
-                        timetable_file or "未使用"
+                        timetable_file or "未使用",
+                        operation  # ← 追加
                     ])
 
                     # === 記録更新 ===
