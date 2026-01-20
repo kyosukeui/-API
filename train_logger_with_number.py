@@ -53,33 +53,24 @@ start_date = datetime.now(JST).date()
 
 # === 運用表読み込み ===
 def load_unyo_table(path):
-    mode = None
+    weekday_ops = {}
+    holiday_ops = {}
 
-
-    with open(path, encoding="utf-8") as f:
+    with open(path, "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
-            if not line or line.startswith("#"):
+            if not line:
                 continue
 
-            if line == "[weekday]":
-                mode = "weekday"
-                continue
-            elif line == "[holiday]":
-                mode = "holiday"
-                continue
+            op, nums = line.split(":")
+            nums = nums.split(",")
 
-            if "=" in line and mode:
-                op, nums = line.split("=", 1)
-                nums = [n.strip() for n in nums.split(",")]
-
-                if mode == "weekday":
-                    weekday_ops[op] = nums
-                else:
-                    holiday_ops[op] = nums
+            if op.startswith("H"):  # 祝日運用
+                holiday_ops[op] = nums
+            else:  # 平日運用
+                weekday_ops[op] = nums
 
     return weekday_ops, holiday_ops
-
 # === 逆引き辞書 ===
 def build_reverse_map(op_table):
     rev = {}
