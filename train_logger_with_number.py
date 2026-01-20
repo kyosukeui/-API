@@ -45,8 +45,7 @@ start_date = datetime.now(JST).date()
 # === 運用表読み込み ===
 def load_unyo_table(path):
     mode = None
-    weekday_ops = {}
-    holiday_ops = {}
+    weekday_ops, holiday_ops = load_unyo_table("data/2025W/2025Wunyo.txt")
 
     with open(path, encoding="utf-8") as f:
         for line in f:
