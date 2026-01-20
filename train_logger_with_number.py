@@ -38,15 +38,15 @@ csv_file = f"csv/train_log_{date_str}.csv"
 with open(csv_file, "w", newline="", encoding="utf-8-sig") as f:
     writer = csv.writer(f)
     writer.writerow([
-    operation,#運用
-    formation,#編成名
-    headsign,#行先
-    train_number,#列車番号
-    station,
-    timetable_file,
-    timestamp,
-    vid
-])
+        "operation",       # 運用
+        "formation",       # 編成名
+        "headsign",        # 行先
+        "train_number",    # 列車番号
+        "station",
+        "timetable_file",
+        "timestamp",
+        "vehicle_id"
+    ])
 interval_minutes = 20
 max_runs = 18
 start_date = datetime.now(JST).date()
