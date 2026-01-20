@@ -57,20 +57,23 @@ def load_unyo_table(path):
     holiday_ops = {}
 
     with open(path, "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line:
+        for raw in f:
+            line = raw.strip()
+
+            # 空行・コメント・区切りなし行はスキップ
+            if not line or "=" not in line:
                 continue
 
-            op, nums = line.split(":")
-            nums = nums.split(",")
+            op, nums = line.split("=", 1)
+            nums = [n.strip() for n in nums.split(",") if n.strip()]
 
-            if op.startswith("H"):  # 祝日運用
+            if op.startswith("H"):
                 holiday_ops[op] = nums
-            else:  # 平日運用
+            else:
                 weekday_ops[op] = nums
 
     return weekday_ops, holiday_ops
+
 # === 逆引き辞書 ===
 def build_reverse_map(op_table):
     rev = {}
