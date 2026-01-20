@@ -37,7 +37,16 @@ csv_file = f"csv/train_log_{date_str}.csv"
 
 with open(csv_file, "w", newline="", encoding="utf-8-sig") as f:
     writer = csv.writer(f)
-    writer.writerow(["timestamp", "vehicle_id", "formation_name", "headsign", "station", "train_number", "timetable_file","operation" ])
+    writer.writerow([
+    "timestamp",
+    "vehicle_id",
+    "formation_name",
+    "headsign",
+    "station",
+    "train_number",
+    "timetable_file",
+    "operation"
+])
 interval_minutes = 20
 max_runs = 18
 start_date = datetime.now(JST).date()
@@ -45,7 +54,7 @@ start_date = datetime.now(JST).date()
 # === 運用表読み込み ===
 def load_unyo_table(path):
     mode = None
-    weekday_ops, holiday_ops = load_unyo_table("data/2025W/2025Wunyo.txt")
+
 
     with open(path, encoding="utf-8") as f:
         for line in f:
@@ -78,8 +87,9 @@ def build_reverse_map(op_table):
         for n in nums:
             rev[n] = op
     return rev
-# === 運用表読み込み ===
-weekday_ops, holiday_ops = load_unyo_table("2025Wunyo.txt")
+
+# === 運用表読み込み（ここに追加） ===
+weekday_ops, holiday_ops = load_unyo_table("data/2025W/2025Wunyo.txt")
 weekday_map = build_reverse_map(weekday_ops)
 holiday_map = build_reverse_map(holiday_ops)
 # === 時刻表読み込み関数 ===
