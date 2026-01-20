@@ -2,6 +2,7 @@ import requests, time, csv, os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import pandas as pd
+import jpholiday
 
 url = "https://buscatch.jp/rt3/unko_map_simple.ajax.php"
 data = {"id": "chitetsu_train", "command": "get_unko_list", "rosen_group_id": "2235"}
@@ -115,11 +116,11 @@ def find_train_number(station, timestamp, delay_sec, line, dirn, timetable):
 # === 時刻表ファイル読み込み ===
 year = "2025W"
 base_dir = Path(f"data/{year}")
-today = datetime.now(JST)
-weekday = today.weekday()
-is_holiday = (weekday >= 5) or (
-    (today.month == 12 and today.day >= 30) or (today.month == 1 and today.day <= 3)
-)
+today = datetime.now(JST).date()
+
+# 土日 or 祝日 を「holiday」扱いにする
+is_holiday = (today.weekday() >= 5) or jpholiday.is_holiday(today)
+
 suffix = "holiday" if is_holiday else "weekday"
 files = [
     (base_dir / f"timetable2025W_honsen_down_{suffix}.csv", "honsen", "down"),
