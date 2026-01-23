@@ -2,7 +2,7 @@ name: Train Logger (Production)
 
 on:
   workflow_dispatch:   # 手動実行
-  schedule:
+#  schedule:
     - cron: "0 5 * * *"
     - cron: "0 11 * * *"
     - cron: "0 17 * * *"
