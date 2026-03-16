@@ -173,7 +173,7 @@ def find_train_number(station, timestamp, delay_sec, line, dirn, timetable):
     return "合致なし", None
 
 # === 時刻表ファイル読み込み ===
-year = "2025W"
+year = "2026"
 base_dir = Path(f"data/{year}")
 today = datetime.now(JST).date()
 
@@ -182,12 +182,12 @@ is_holiday = (today.weekday() >= 5) or jpholiday.is_holiday(today)
 
 suffix = "holiday" if is_holiday else "weekday"
 files = [
-    (base_dir / f"timetable2025W_honsen_down_{suffix}.csv", "honsen", "down"),
-    (base_dir / f"timetable2025W_honsen_up_{suffix}.csv",   "honsen", "up"),
-    (base_dir / f"timetable2025W_fuzikoshikamitaki_down_{suffix}.csv", "fuzikoshikamitaki", "down"),
-    (base_dir / f"timetable2025W_fuzikoshikamitaki_up_{suffix}.csv",   "fuzikoshikamitaki", "up"),
-    (base_dir / f"timetable2025W_tateyama_down_{suffix}.csv", "tateyama", "down"),
-    (base_dir / f"timetable2025W_tateyama_up_{suffix}.csv",   "tateyama", "up"),
+    (base_dir / f"timetable2026_honsen_down_{suffix}.csv", "honsen", "down"),
+    (base_dir / f"timetable2026_honsen_up_{suffix}.csv",   "honsen", "up"),
+    (base_dir / f"timetable2026_fuzikoshikamitaki_down_{suffix}.csv", "fuzikoshikamitaki", "down"),
+    (base_dir / f"timetable2026_fuzikoshikamitaki_up_{suffix}.csv",   "fuzikoshikamitaki", "up"),
+    (base_dir / f"timetable2026_tateyama_down_{suffix}.csv", "tateyama", "down"),
+    (base_dir / f"timetable2026_tateyama_up_{suffix}.csv",   "tateyama", "up"),
 ]
 timetable = []
 used_files = []
