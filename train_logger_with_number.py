@@ -97,7 +97,7 @@ def build_reverse_map(op_table):
     return rev
 
 # === 運用表読み込み（ここに追加） ===
-weekday_ops, holiday_ops = load_unyo_table("data/2025W/2025Wunyo.txt")
+weekday_ops, holiday_ops = load_unyo_table("data/2026/2026Wunyo.txt")
 weekday_map = build_reverse_map(weekday_ops)
 holiday_map = build_reverse_map(holiday_ops)
 # === 時刻表読み込み関数 ===
