@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>富山地鉄 運行ログ（CSVビュー）</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body {
+    font-family: sans-serif;
+    padding: 10px;
+    background: #f5f5f5;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+th, td {
+    border: 1px solid #ccc;
+    padding: 6px;
+    font-size: 14px;
+}
+th {
+    background: #eee;
+}
+</style>
+</head>
+<body>
+
+<h2>富山地鉄 運行ログ（リアルタイム）</h2>
+<p>最新の CSV を読み込んで表示しています。</p>
+
+<table id="csv-table"></table>
+
+<script>
+async function loadCSV() {
+    const res = await fetch("csv/train_log_latest.csv");
+    const text = await res.text();
+    const lines = text.trim().split("\n");
+
+    const table = document.getElementById("csv-table");
+    table.innerHTML = "";
+
+    // ヘッダー行
+    const header = lines[0].split(",");
+    let headerRow = "<tr>";
+    for (const h of header) {
+        headerRow += `<th>${h}</th>`;
+    }
+    headerRow += "</tr>";
+    table.innerHTML += headerRow;
+
+    // データ行
+    for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(",");
+        let row = "<tr>";
+        for (const c of cols) {
+            row += `<td>${c}</td>`;
+        }
+        row += "</tr>";
+        table.innerHTML += row;
+    }
+}
+
+loadCSV();
+setInterval(loadCSV, 60000); // 1分ごとに更新
+</script>
+
+</body>
+</html>
