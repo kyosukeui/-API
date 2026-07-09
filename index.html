@@ -32,10 +32,10 @@ th {
 <p>最新の CSV を読み込んで表示しています。</p>
 
 <table id="csv-table"></table>
-
 <script>
 async function loadCSV() {
-    const res = await fetch("csv/train_log_latest.csv");
+    // キャッシュ無効化（毎回最新を取りに行く）
+    const res = await fetch("csv/train_log_latest.csv?nocache=" + Date.now());
     const text = await res.text();
     const lines = text.trim().split("\n");
 
@@ -63,9 +63,13 @@ async function loadCSV() {
     }
 }
 
+// 初回読み込み
 loadCSV();
-setInterval(loadCSV, 3000); // 1分ごとに更新
+
+// 3秒ごとに最新CSVを読み直す
+setInterval(loadCSV, 3000);
 </script>
+
 
 </body>
 </html>
