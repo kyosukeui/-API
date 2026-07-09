@@ -249,7 +249,7 @@ try:
                         timestamp,
                         vid
                     ])
-
+                    print(f"{timestamp} | 運用:{operation} | 編成:{formation} | 行先:{headsign} | 列番:{train_number} | 駅:{station}")
                     # === 記録更新 ===
                     last_records[vid] = (headsign, train_number)
 
