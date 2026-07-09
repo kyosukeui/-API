@@ -249,6 +249,12 @@ try:
                         timestamp,
                         vid
                     ])
+                    writer.writerow(row_data)
+
+                    # ★★★ GitHub Pages 用の最新ファイルにも書く（ここが追加ポイント） ★★★
+                    with open("csv/train_log_latest.csv", "a", newline="", encoding="utf-8-sig") as f2:
+                        writer2 = csv.writer(f2)
+                        writer2.writerow(row_data)
                     print(f"{timestamp} | 運用:{operation} | 編成:{formation} | 行先:{headsign} | 列番:{train_number} | 駅:{station}")
                     # === 記録更新 ===
                     last_records[vid] = (headsign, train_number)
