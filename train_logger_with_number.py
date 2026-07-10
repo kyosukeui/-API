@@ -9,19 +9,19 @@ data = {"id": "chitetsu_train", "command": "get_unko_list", "rosen_group_id": "2
 headers = {"User-Agent": "Mozilla/5.0", "X-Requested-With": "XMLHttpRequest"}
 
 id_map = {
-    "5741": "16011F(とりたい！！！)",
+    "5741": "【16011F】",
     "5742": "16013F",
-    "5743": "10031F(HM)",
-    "5744": "10033F",
+    "5743": "10031F",
+    "5744": "【10033】F",
     "5746": "10039F(HM)",
     "5747": "10041F（HM）",
     "5748": "10043F(あたり)",
     "5749": "10045F(側面汚い)",
-    "5750": "14761F",
-    "5751": "14763F",
+    "5750": "【14761F"】,
+    "5751": "【14763F】",
     "5752": "14765F(HM)",
     "5754": "赤いゴミ",
-    "5755": "14771F(あたり)",
+    "5755": "【14771F】",
     "5883": "17481F(ゴミ)",
     "5758": "17483F(検査明け)",
     "5884": "17485F",
@@ -249,13 +249,7 @@ try:
                         timestamp,
                         vid
                     ])
-                    writer.writerow(row_data)
 
-                    # ★★★ GitHub Pages 用の最新ファイルにも書く（ここが追加ポイント） ★★★
-                    with open("csv/train_log_latest.csv", "a", newline="", encoding="utf-8-sig") as f2:
-                        writer2 = csv.writer(f2)
-                        writer2.writerow(row_data)
-                    print(f"{timestamp} | 運用:{operation} | 編成:{formation} | 行先:{headsign} | 列番:{train_number} | 駅:{station}")
                     # === 記録更新 ===
                     last_records[vid] = (headsign, train_number)
 
