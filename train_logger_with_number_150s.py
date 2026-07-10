@@ -10,19 +10,19 @@ data = {"id": "chitetsu_train", "command": "get_unko_list", "rosen_group_id": "2
 headers = {"User-Agent": "Mozilla/5.0", "X-Requested-With": "XMLHttpRequest"}
 
 id_map = {
-    "5741": "16011F(とりたい！！！)",
+    "5741": "【16011F】",
     "5742": "16013F",
-    "5743": "10031F(HM)",
-    "5744": "10033F",
+    "5743": "10031F",
+    "5744": "【10033F】",
     "5746": "10039F(HM)",
     "5747": "10041F（HM）",
     "5748": "10043F(あたり)",
     "5749": "10045F(側面汚い)",
-    "5750": "14761F(岩瀬ゆうこ)",
-    "5751": "14763F(岩瀬ゆうこ)",
+    "5750": "【14761F"】,
+    "5751": "【14763F】",
     "5752": "14765F(HM)",
     "5754": "赤いゴミ",
-    "5755": "14771F(あたり)",
+    "5755": "【14771F】",
     "5883": "17481F(ゴミ)",
     "5758": "17483F(検査明け)",
     "5884": "17485F",
@@ -51,8 +51,8 @@ with open(csv_file, "w", newline="", encoding="utf-8-sig") as f:
         "timestamp",
         "vehicle_id"
     ])
-interval_minutes = 0.5
-max_runs = 5
+interval_minutes = 0.2
+max_runs = 4
 start_date = datetime.now(JST).date()
 
 # === 運用表読み込み ===
