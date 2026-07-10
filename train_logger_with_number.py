@@ -8,6 +8,7 @@ url = "https://buscatch.jp/rt3/unko_map_simple.ajax.php"
 data = {"id": "chitetsu_train", "command": "get_unko_list", "rosen_group_id": "2235"}
 headers = {"User-Agent": "Mozilla/5.0", "X-Requested-With": "XMLHttpRequest"}
 
+
 id_map = {
     "5741": "[16011F]",
     "5742": "16013F",
@@ -17,7 +18,7 @@ id_map = {
     "5747": "10041F（HM）",
     "5748": "10043F(あたり)",
     "5749": "10045F(側面汚い)",
-    "5750": "[14761F"],
+    "5750": "[14761F]",
     "5751": "[14763F]",
     "5752": "14765F(HM)",
     "5754": "赤いゴミ",
