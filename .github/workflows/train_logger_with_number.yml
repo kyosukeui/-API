@@ -1,4 +1,4 @@
-name: Chitetsu train log 6h
+name: Chitetsu train log 3h
 on:
   workflow_dispatch:   # 手動実行も可能
   schedule:
