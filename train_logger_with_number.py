@@ -50,8 +50,8 @@ with open(csv_file, "w", newline="", encoding="utf-8-sig") as f:
         "timestamp",
         "vehicle_id"
     ])
-interval_minutes = 10
-max_runs = 36
+interval_minutes = 5
+max_runs = 37
 start_date = datetime.now(JST).date()
 
 # === 運用表読み込み ===
