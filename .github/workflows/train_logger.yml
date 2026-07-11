@@ -3,11 +3,6 @@ name: Train Logger (Production)
 on:
   workflow_dispatch:   # 手動実行
   schedule:
-    - cron: "0 5 * * *"
-    - cron: "0 10 * * *"
-    - cron: "0 15 * * *"
-    - cron: "0 20 * * *"
-
 jobs:
   run-logger:
     runs-on: ubuntu-latest
